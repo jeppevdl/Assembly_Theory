@@ -1,3 +1,7 @@
+#from https://www.mdpi.com/1099-4300/24/7/884
+
+
+#basic algorithm
 function main(B, t, upper_bound)
     global A = length(B) + upper_bound
     assembly_index(B, t)
@@ -7,6 +11,7 @@ end
 function assembly_index(S, t)
     global A
 
+    #use different stopping criterion?
     if A <= length(S) + 1
         return
     end
@@ -28,7 +33,8 @@ end
 
 
 B = ["B", "A", "N"] #basic building blocks
-t = "BANANA" #target string
+# t = "ANNNBNN" #target string
+t = rand(B, 8) |> join
 upper_bound = length(t) #upper bound of complexity
 
 #create list of species
@@ -40,4 +46,4 @@ for i in 2:upper_bound
 end
 
 #calculate assembly index
-main(B, t, upper_bound) 
+main(B, t, upper_bound)
