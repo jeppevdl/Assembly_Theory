@@ -78,7 +78,7 @@ end
 # setting up model
 
 building_blocks = ["A", "B", "N"]
-upper_bound = 6
+upper_bound = 7
 rate = 1
 t = default_t()
 
@@ -101,7 +101,7 @@ species_symbols = [Symbol(replace(string(sp), "(t)" => "")) for sp in species]
 sol_lengths = map(length, map(string, species_symbols))
 df = DataFrame(name = species_symbols, length = sol_lengths)
 
-p = plot(title = "Sum of Variables by Length", xlabel = "Time", ylabel = "Sum");
+p = plot(title = "Sum of Variables by Length", xlabel = "Time", ylabel = "Sum", dpi = 600);
 
 for len in unique(sol_lengths)
 
@@ -113,12 +113,13 @@ for len in unique(sol_lengths)
 end
 
 display(p)
+# savefig(p, "AT_exploration/simple_example_7.png")
 
 #Plot by assembly index
 sol_ai = map(assembly_index, map(string, species_symbols))
 df_ai = DataFrame(name = species_symbols, ai = sol_ai)
 
-p_ai = plot(title = "Sum of Variables by Assembly Index", xlabel = "Time", ylabel = "Sum");
+p_ai = plot(title = "Sum of Variables by Assembly Index", xlabel = "Time", ylabel = "Sum", dpi = 600);
 
 for ai in unique(sol_ai)
 
@@ -130,3 +131,4 @@ for ai in unique(sol_ai)
 end
 
 display(p_ai)
+# savefig(p_ai, "AT_exploration/simple_example_7_ai.png")
