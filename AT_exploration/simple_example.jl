@@ -78,14 +78,15 @@ end
 # setting up model
 
 building_blocks = ["A", "B", "N"]
-upper_bound = 7
+upper_bound = 8
 rate = 1
 t = default_t()
 
+#creating the reactions can take a long time
 reactions, species = create_reactions(building_blocks, upper_bound, rate);
 @named jumpmodel = ReactionSystem(reactions, t)
 
-u0 = vcat([Symbol(replace(string(sp), "(t)" => "")) => 500 for sp in species[1:length(building_blocks)]], [Symbol(replace(string(sp), "(t)" => "")) => 0 for sp in species[length(building_blocks)+1:end]])
+u0 = vcat([Symbol(replace(string(sp), "(t)" => "")) => 1000 for sp in species[1:length(building_blocks)]], [Symbol(replace(string(sp), "(t)" => "")) => 0 for sp in species[length(building_blocks)+1:end]])
 tspan = (0.0, 1.0)
 ps = []
 
@@ -96,39 +97,58 @@ jump_prob = JumpProblem(complete(jumpmodel), prob, Direct())
 sol = solve(jump_prob, SSAStepper())
 
 #-----------------------------------------------------------------------------------------
-#Plot by length
-species_symbols = [Symbol(replace(string(sp), "(t)" => "")) for sp in species]
+#create dataframe with names, lengths and assembly indices for plotting
+species_symbols = [Symbol(replace(string(sp), "(t)" => "")) for sp in jumpmodel.unknowns]
 sol_lengths = map(length, map(string, species_symbols))
-df = DataFrame(name = species_symbols, length = sol_lengths)
+sol_ai = map(assembly_index, map(string, species_symbols))
 
-p = plot(title = "Sum of Variables by Length", xlabel = "Time", ylabel = "Sum", dpi = 600);
+df = DataFrame(name = species_symbols, length = sol_lengths, ai = sol_ai)
+
+#Plot by length
+p = plot(title = "Sum of Variables by Length", xlabel = "Timestep", ylabel = "Sum", dpi = 600);
 
 for len in unique(sol_lengths)
 
     group_indices = findall(df.length .== len)
 
-    group_sum = [sum([sol.u[t][idx] for idx in group_indices]) for t in 1:length(sol.u)]
+    group_sum = [sum([sol.u[t][idx] for idx in group_indices]) for t in 1:length(sol.t)]
 
     plot!(p, 1:length(sol.u), group_sum, label = "Length $len")
 end
 
 display(p)
-# savefig(p, "AT_exploration/simple_example_7.png")
+savefig(p, "AT_exploration/fig/simple_example_8.png")
 
 #Plot by assembly index
-sol_ai = map(assembly_index, map(string, species_symbols))
-df_ai = DataFrame(name = species_symbols, ai = sol_ai)
-
-p_ai = plot(title = "Sum of Variables by Assembly Index", xlabel = "Time", ylabel = "Sum", dpi = 600);
+p_ai = plot(title = "Sum of Variables by Assembly Index", xlabel = "Timestep", ylabel = "Sum", dpi = 600);
 
 for ai in unique(sol_ai)
 
-    group_indices = findall(df_ai.ai .== ai)
+    group_indices = findall(df.ai .== ai)
 
-    group_sum = [sum([sol.u[t][idx] for idx in group_indices]) for t in 1:length(sol.u)]
+    group_sum = [sum([sol.u[t][idx] for idx in group_indices]) for t in 1:length(sol.t)]
 
     plot!(p_ai, 1:length(sol.u), group_sum, label = "Assembly Index $ai")
 end
 
 display(p_ai)
-# savefig(p_ai, "AT_exploration/simple_example_7_ai.png")
+savefig(p_ai, "AT_exploration/fig/simple_example__ai.png")
+
+#Plot assembly through time
+assembly_vector = []
+for i in 1:length(sol.t)
+    NT = sum(sol.u[i])
+    A = 0
+    for (j, ai) in enumerate(df.ai)
+        if sol.u[i][j] != 0
+            a = ℯ^(ai) * (sol.u[i][j]-1) / NT
+            A += a
+        end
+    end
+    append!(assembly_vector, A)
+end
+
+p_a = plot(title = "Assembly through time", xlabel = "Timestep", ylabel = "Assembly", dpi = 600, legend=false);
+plot!(p_a, 1:length(assembly_vector), assembly_vector);
+display(p_a)
+savefig(p_a, "AT_exploration/fig/simple_example__assembly_8.png")

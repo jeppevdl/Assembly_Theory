@@ -27,15 +27,24 @@ function _assembly_index(s, visited, dictionary) # aka "AssemblyIndex"
         visiteds = Vector{Vector{String}}(undef, length(substructure_pairs))
 
         for (sp_idx, sp) in enumerate(substructure_pairs)
-            A1, visited1 = _assembly_index(sp[1], visited, dictionary)
-            A2, visited2 = _assembly_index(sp[2], [visited1; sp[1]], dictionary)
-            As[sp_idx] = A1 + A2 + 1
-            visiteds[sp_idx] = [visited2; sp[2]]
+            A1, visited11 = _assembly_index(sp[1], visited, dictionary)
+            A2, visited12 = _assembly_index(sp[2], [visited11; sp[1]], dictionary)
+            sum1 = A1 + A2 + 1
+
+            A2, visited22 = _assembly_index(sp[2], visited, dictionary)
+            A1, visited21 = _assembly_index(sp[1], [visited22; sp[2]], dictionary)
+            sum2 = A1 + A2 + 1
+            if sum1 < sum2
+                As[sp_idx] = sum1
+                visiteds[sp_idx] = [visited12; sp[2]]
+            else
+                As[sp_idx] = sum2
+                visiteds[sp_idx] = [visited21; sp[1]]
+            end
         end
 
         min_idx = argmin(As)
         dictionary[s] = As[min_idx]
-        # println(dictionary, "\n")
         return As[min_idx], visiteds[min_idx]
     end
 end
@@ -46,7 +55,7 @@ end
 
 assembly_index("BANANA", return_visited = true)
 assembly_index("ABRACADABRA", return_visited = true)
-
+assembly_index("CADABRA", return_visited = true)
 # # tests
 assembly_index("AAAA") == 2
 assembly_index("BANANA") == 4
@@ -57,4 +66,3 @@ assembly_index("redrumredrumredrumredrumredrumredrumredrumredrumredrumredrum") #
 @time assembly_index("AAA")
 @time assembly_index("BANANA")
 @time assembly_index("ABNNNBA")
-@time assembly_index("ABRACADABRAABRACADABRA")
