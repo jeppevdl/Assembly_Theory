@@ -106,14 +106,14 @@ df = DataFrame(name = species_symbols, length = sol_lengths, ai = sol_ai)
 
 #Plot by length
 p = plot(title = "Sum of Variables by Length", xlabel = "Timestep", ylabel = "Sum", dpi = 600);
-
-for len in unique(sol_lengths)
+colors = cgrad(:jet, length(unique(sol_lengths)), categorical = true);
+for (i, len) in enumerate(unique(sol_lengths))
 
     group_indices = findall(df.length .== len)
 
     group_sum = [sum([sol.u[t][idx] for idx in group_indices]) for t in 1:length(sol.t)]
 
-    plot!(p, 1:length(sol.u), group_sum, label = "Length $len")
+    plot!(p, 1:length(sol.u), group_sum, label = "Length $len", color = colors[i])
 end
 
 display(p)
@@ -121,14 +121,14 @@ savefig(p, "AT_exploration/fig/simple_example_8.png")
 
 #Plot by assembly index
 p_ai = plot(title = "Sum of Variables by Assembly Index", xlabel = "Timestep", ylabel = "Sum", dpi = 600);
-
-for ai in unique(sol_ai)
+colors = cgrad(:jet, length(unique(sol_ai)), categorical = true);
+for (i, ai) in enumerate(unique(sol_ai))
 
     group_indices = findall(df.ai .== ai)
 
     group_sum = [sum([sol.u[t][idx] for idx in group_indices]) for t in 1:length(sol.t)]
 
-    plot!(p_ai, 1:length(sol.u), group_sum, label = "Assembly Index $ai")
+    plot!(p_ai, 1:length(sol.u), group_sum, label = "Assembly Index $ai", color = colors[i])
 end
 
 display(p_ai)
