@@ -2,7 +2,7 @@ using Catalyst, OrdinaryDiffEq, Plots, Graphs, GraphRecipes, JumpProcesses, Data
 #functions--------------------------------------------------------------------------------
 
 #function to create a reaction network
-function create_reactions(building_blocks, upper_bound, rate)
+function create_reactions(building_blocks, upper_bound, rate; selection_target="", selection_rate=2)
     species = building_blocks
     # create all possible species under upper bound by combining building blocks
     for i in 2:upper_bound 
@@ -23,7 +23,13 @@ function create_reactions(building_blocks, upper_bound, rate)
             if len_comb <= upper_bound
                 comb = replace(string(str1), "(t)" => "") * string(str2) .|> Meta.parse
                 comb = only(@eval @species $(comb))
-                if string(str1) == string(str2) 
+                if selection_target != "" && occursin(selection_target, string(comb))
+                    if string(str1) == string(str2) 
+                        push!(reactions, Reaction(selection_rate, [str1], [comb], [2], [1]))
+                    else
+                        push!(reactions, Reaction(selection_rate, [str1, str2], [comb], [1, 1], [1]))
+                    end
+                elseif string(str1) == string(str2) 
                     push!(reactions, Reaction(rate, [str1], [comb], [2], [1]))
                 else
                     push!(reactions, Reaction(rate, [str1, str2], [comb], [1, 1], [1]))
@@ -78,16 +84,18 @@ end
 # setting up model
 
 building_blocks = ["A", "B", "N"]
-upper_bound = 8
+upper_bound = 6
 rate = 1
+selection_rate = 3
+selection_target = ""
 t = default_t()
 
 #creating the reactions can take a long time
-reactions, species = create_reactions(building_blocks, upper_bound, rate);
+reactions, species = create_reactions(building_blocks, upper_bound, rate; selection_target, selection_rate);
 @named jumpmodel = ReactionSystem(reactions, t)
 
-u0 = vcat([Symbol(replace(string(sp), "(t)" => "")) => 1000 for sp in species[1:length(building_blocks)]], [Symbol(replace(string(sp), "(t)" => "")) => 0 for sp in species[length(building_blocks)+1:end]])
-tspan = (0.0, 1.0)
+u0 = vcat([Symbol(replace(string(sp), "(t)" => "")) => 500 for sp in species[1:length(building_blocks)]], [Symbol(replace(string(sp), "(t)" => "")) => 0 for sp in species[length(building_blocks)+1:end]])
+tspan = (0.0, 0.02)
 ps = []
 
 prob = DiscreteProblem(complete(jumpmodel), u0, tspan, ps)
@@ -98,14 +106,14 @@ sol = solve(jump_prob, SSAStepper())
 
 #-----------------------------------------------------------------------------------------
 #create dataframe with names, lengths and assembly indices for plotting
-species_symbols = [Symbol(replace(string(sp), "(t)" => "")) for sp in jumpmodel.unknowns]
-sol_lengths = map(length, map(string, species_symbols))
-sol_ai = map(assembly_index, map(string, species_symbols))
+species_strings = [replace(string(sp), "(t)" => "") for sp in jumpmodel.unknowns]
+sol_lengths = map(length, species_strings)
+sol_ai = map(assembly_index, species_strings)
 
-df = DataFrame(name = species_symbols, length = sol_lengths, ai = sol_ai)
+df = DataFrame(name = species_strings, length = sol_lengths, ai = sol_ai)
 
 #Plot by length
-p = plot(title = "Sum of Variables by Length", xlabel = "Timestep", ylabel = "Sum", dpi = 600);
+p = plot(title = "Sum of Variables by Length", xlabel = "Time", ylabel = "Sum", dpi = 600);
 colors = cgrad(:jet, length(unique(sol_lengths)), categorical = true);
 for (i, len) in enumerate(unique(sol_lengths))
 
@@ -113,14 +121,14 @@ for (i, len) in enumerate(unique(sol_lengths))
 
     group_sum = [sum([sol.u[t][idx] for idx in group_indices]) for t in 1:length(sol.t)]
 
-    plot!(p, 1:length(sol.u), group_sum, label = "Length $len", color = colors[i])
+    plot!(p, sol.t, group_sum, label = "Length $len", color = colors[i])
 end
 
 display(p)
-savefig(p, "AT_exploration/fig/simple_example_8.png")
+# savefig(p, "AT_exploration/fig/simple_example_length.png")
 
 #Plot by assembly index
-p_ai = plot(title = "Sum of Variables by Assembly Index", xlabel = "Timestep", ylabel = "Sum", dpi = 600);
+p_ai = plot(title = "Sum of Variables by Assembly Index", xlabel = "Time", ylabel = "Sum", dpi = 600);
 colors = cgrad(:jet, length(unique(sol_ai)), categorical = true);
 for (i, ai) in enumerate(unique(sol_ai))
 
@@ -128,11 +136,11 @@ for (i, ai) in enumerate(unique(sol_ai))
 
     group_sum = [sum([sol.u[t][idx] for idx in group_indices]) for t in 1:length(sol.t)]
 
-    plot!(p_ai, 1:length(sol.u), group_sum, label = "Assembly Index $ai", color = colors[i])
+    plot!(p_ai, sol.t, group_sum, label = "Assembly Index $ai", color = colors[i])
 end
 
 display(p_ai)
-savefig(p_ai, "AT_exploration/fig/simple_example__ai.png")
+# savefig(p_ai, "AT_exploration/fig/simple_example_ai.png")
 
 #Plot assembly through time
 assembly_vector = []
@@ -141,14 +149,24 @@ for i in 1:length(sol.t)
     A = 0
     for (j, ai) in enumerate(df.ai)
         if sol.u[i][j] != 0
-            a = ℯ^(ai) * (sol.u[i][j]-1) / NT
+            a = exp(ai) * (sol.u[i][j]-1) / NT
             A += a
         end
     end
     append!(assembly_vector, A)
 end
 
-p_a = plot(title = "Assembly through time", xlabel = "Timestep", ylabel = "Assembly", dpi = 600, legend=false);
-plot!(p_a, 1:length(assembly_vector), assembly_vector);
+p_a = plot(title = "Assembly Through Time", xlabel = "Time", ylabel = "Assembly", dpi = 600, legend=false);
+plot!(p_a, sol.t, assembly_vector);
 display(p_a)
-savefig(p_a, "AT_exploration/fig/simple_example__assembly_8.png")
+# savefig(p_a, "AT_exploration/fig/simple_example__assembly.png")
+
+target_idx = [i for (i, sp) in enumerate(species_strings) if sp == "BANANA"][1]
+target_vector = []
+for i in 1:length(sol.t)
+    append!(target_vector, sol.u[i][target_idx])
+end
+
+p_t = plot(title = "Target Species Through Time", xlabel = "Time", ylabel = "Target Species", dpi = 600, legend=false);
+plot!(p_t, sol.t[1:length(sol.t)], target_vector);
+display(p_t)
