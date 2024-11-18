@@ -23,7 +23,8 @@ function create_reactions(building_blocks, upper_bound, rate; selection_target="
             if len_comb <= upper_bound
                 comb = replace(string(str1), "(t)" => "") * string(str2) .|> Meta.parse
                 comb = only(@eval @species $(comb))
-                if selection_target != "" && occursin(selection_target, string(comb))
+                if selection_target != "" && [string(str1), string(str2)] in [["B(t)", "A(t)"], ["N(t)", "A(t)"], ["NA(t)", "NA(t)"], ["BA(t)", "NANA(t)"]]
+                    println(string(str1), string(str2))
                     if string(str1) == string(str2) 
                         push!(reactions, Reaction(selection_rate, [str1], [comb], [2], [1]))
                     else
@@ -86,12 +87,12 @@ end
 building_blocks = ["A", "B", "N"]
 upper_bound = 6
 rate = 1
-selection_rate = 3
-selection_target = ""
+selection_rate = 20
+selection_target = "BANANA"
 t = default_t()
 
 #creating the reactions can take a long time
-reactions, species = create_reactions(building_blocks, upper_bound, rate; selection_target, selection_rate);
+reactions, species = create_reactions(building_blocks, upper_bound, rate; selection_target, selection_rate)
 @named jumpmodel = ReactionSystem(reactions, t)
 
 u0 = vcat([Symbol(replace(string(sp), "(t)" => "")) => 500 for sp in species[1:length(building_blocks)]], [Symbol(replace(string(sp), "(t)" => "")) => 0 for sp in species[length(building_blocks)+1:end]])
@@ -159,7 +160,7 @@ end
 p_a = plot(title = "Assembly Through Time", xlabel = "Time", ylabel = "Assembly", dpi = 600, legend=false);
 plot!(p_a, sol.t, assembly_vector);
 display(p_a)
-# savefig(p_a, "AT_exploration/fig/simple_example__assembly.png")
+# savefig(p_a, "AT_exploration/fig/simple_example__assembly_selection.png")
 
 target_idx = [i for (i, sp) in enumerate(species_strings) if sp == "BANANA"][1]
 target_vector = []
@@ -170,3 +171,4 @@ end
 p_t = plot(title = "Target Species Through Time", xlabel = "Time", ylabel = "Target Species", dpi = 600, legend=false);
 plot!(p_t, sol.t[1:length(sol.t)], target_vector);
 display(p_t)
+# savefig(p_t, "AT_exploration/fig/simple_example_target_selection.png")
