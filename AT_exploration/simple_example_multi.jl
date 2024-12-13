@@ -114,12 +114,15 @@ building_blocks = ["A", "B", "N"]
 upper_bound = 6
 rate = 1
 selection_rate = 10
+
+#set to "" for no selection
 selection_target = ""
+
 upregulated = [["B(t)", "A(t)"], ["N(t)", "A(t)"], ["NA(t)", "NA(t)"], ["BA(t)", "NANA(t)"]]
 t = default_t()
 
 #creating the reactions can take a long time
-reactions, species = create_reactions(building_blocks, upper_bound, rate; selection_target, selection_rate, upregulated)
+reactions, species = create_reactions(building_blocks, upper_bound, rate; selection_target, selection_rate, upreg_reactions = upregulated)
 @named jumpmodel = ReactionSystem(reactions, t)
 
 u0 = vcat([Symbol(replace(string(sp), "(t)" => "")) => 5000 for sp in species[1:length(building_blocks)]], [Symbol(replace(string(sp), "(t)" => "")) => 0 for sp in species[length(building_blocks)+1:end]])
@@ -148,7 +151,7 @@ num_sims = 50
 target_values = []
 
 p_a = plot(title = "Assembly Through Time", xlabel = "Time", ylabel = "Assembly", dpi = 600, legend=false, ylims = (0, 80));
-p_t = plot(title = "Target Species Through Time", xlabel = "Time", ylabel = "Target Species", dpi = 600, legend=false, ylims = (0, 2000));
+p_t = plot(title = "Target Species Through Time", xlabel = "Time", ylabel = "Target Species", dpi = 600, legend=false, ylims = (0, 400));
 
 @time @threads for _ in 1:num_sims
     
@@ -189,8 +192,8 @@ p_t = plot(title = "Target Species Through Time", xlabel = "Time", ylabel = "Tar
 end
 
 display(p_a)
-# savefig(p_a, "AT_exploration/fig/simple_example_assembly_50sims.png")
+# savefig(p_a, "AT_exploration/fig/multiple_runs/simple_example_assembly_50sims.png")
 average = mean(target_values)
-annotate!(p_t, 0.012, -200, text("Average number of target species formed: $average", 6, :red, :left));
+annotate!(p_t, 0.012, 45, text("Average number of target species formed: $average", 6, :red, :left));
 display(p_t)
-# savefig(p_t, "AT_exploration/fig/simple_example_target_50sims.png")
+# savefig(p_t, "AT_exploration/fig/multiple_runs/simple_example_target_50sims.png")
