@@ -2,64 +2,77 @@ using Pkg
 if basename(pwd()) != "GEMs"
     cd("GEMs")
 end
-
 Pkg.activate(".")
 
-using HTTP, JSON
+using HTTP, JSON, KEGGAPI, MolecularGraph, ProgressMeter
 
-inchi_dict = Dict{String, String}()
-not_found = Dict{String, Int}()
-function get_compound_inchi(pathway_id, dict::Dict{String, String}, not_found::Dict{String, Int})
-    url = "https://rest.kegg.jp/link/cpd/$pathway_id"
-    response = HTTP.get(url)
-    compounds = [split(line, "\t")[2][5:end] for line in split(String(response.body), "\n") if !isempty(line) && !haskey(dict, split(line, "\t")[2][5:end])]
-
-    batch_size = 10
-    for batch in Iterators.partition(compounds, batch_size)
-        compound_list = join(batch, "+")
-        url2 = "https://rest.kegg.jp/conv/chebi/compound:$compound_list"
-        response2 = HTTP.get(url2)
-
-        for line in split(String(response2.body), "\n")
-            if !isempty(line)
-                parts = split(line, "\t")
-                compound = parts[1][5:end]
-                chebi_id = parts[2][7:end]
-
-                url_inchi = "https://www.ebi.ac.uk/webservices/chebi/2.0/test/getCompleteEntity?chebiId=CHEBI:$chebi_id"
-                response_inchi = HTTP.get(url_inchi)
-                inchi_match = match(r"<inchi>(.*?)</inchi>", String(response_inchi.body))
-
-                if !isnothing(inchi_match)
-                    inchi = inchi_match.captures[1]
-                    dict[compound] = inchi
-                else
-                    println("No InChI found for $compound")
-                    not_found[compound] = get(not_found, compound, 0) + 1
-                end
-            end
-        end
-    end
-    return dict, not_found
+function KEGGAPI.kegg_get(query::Vector{String}, option::String, retries::Int)
+	i = 0
+	while i < retries
+		try
+			return KEGGAPI.kegg_get(query, option)
+		catch e
+			if occursin("404", string(e))
+				error(e)
+			elseif occursin("403", string(e))
+				i += 1
+				sleep(10)
+			end
+		end
+	end
 end
 
-reference_pathways = HTTP.get("https://rest.kegg.jp/list/pathway")
-reference_pathway_ids = [split(line, "\t")[1] for line in split(String(reference_pathways.body), "\n") if !isempty(line)]
+println(PROGRAM_FILE * "$(@__FILE__) - v0.0")
 
-for pathway_id in reference_pathway_ids[1:100]
-    inchi_dict, not_found = get_compound_inchi(pathway_id, inchi_dict, not_found)
+# Get unique paths, unique compounds and relationshipo between both
+@info "Retrieving pathways and it's compounds from KEGG..."
+path2cpd, allpath, allcpd = begin
+	pathways, compounds = KEGGAPI.link("cpd", "pathway").data
+	rels = Dict{String,Vector{String}}(path => [] for path in pathways)
+	for i in eachindex(pathways)
+		push!(rels[pathways[i]], compounds[i])
+	end
+	rels, sort(unique(pathways)), sort(unique(compounds))
 end
+@info "Found $(length(allcpd)) compounds associated to $(length(allpath)) pathways"
+
+# Get MOL file for compounds and convert to InCHI
+# NOTE: DO NOT PARALLELIZE THIS STEP, IT WILL ERROR OUT AND LOCK YOU OUT OF USING THE KEGG API
+@info "Computing InChI code for found compounds..."
+allinchi = Dict{String,Union{Missing,String}}()
+@showprogress for batch in collect(Iterators.partition(allcpd, 10))
+	try
+		sleep(0.4)
+		batch_mol = KEGGAPI.kegg_get(String.(batch), "mol", 5) |> r -> split(r[2][1], "\$\$\$\$\n", keepempty=false)
+		map(zip(batch,batch_mol)) do (cpd,mol)
+			try
+				allinchi[cpd] = inchi(string(mol))
+			catch e
+				# NOTE: Polymers (and some molecules) fail to convert due to them having an atom
+				# of type "R" (repetition).
+				@warn "Failed to convert '$cpd' to InChI."
+				allinchi[cpd] = missing
+			end
+		end
+	catch e
+		@warn e
+		map(batch) do cpd
+			allinchi[cpd] = missing
+		end
+	end
+end
+@info "Collected InChI codes for $(length(filter(!ismissing, collect(values(allinchi))))) compounds."
+@warn "Failed to collected InChI codes for $(length(filter(ismissing, collect(values(allinchi))))) compounds"
+
+valid_inchi = [k => allinchi[k] for k in findall(!ismissing, allinchi)]
+missing_inchi = [k => allinchi[k] for k in findall(ismissing, allinchi)]
 
 open("data/inchi_dict_subset.json", "w") do f
-    JSON.print(f, inchi_dict)
+    JSON.print(f, valid_inchi)
 end
+@info "Wrote valid InChI codes: data/inchi_valid.json"
 
 open("data/not_found_subset.json", "w") do f
-    JSON.print(f, not_found)
+    JSON.print(f, missing_inchi)
 end
-
-
-n = 30
-for i in 1:n
-
-end
+@info "Wrote missing InChI codes: data/inchi_missing.json"
