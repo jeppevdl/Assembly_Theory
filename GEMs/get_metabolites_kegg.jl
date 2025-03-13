@@ -50,11 +50,11 @@ for pathway_id in reference_pathway_ids[1:100]
     inchi_dict, not_found = get_compound_inchi(pathway_id, inchi_dict, not_found)
 end
 
-open("inchi_dict_subset.json", "w") do f
+open("data/inchi_dict_subset.json", "w") do f
     JSON.print(f, inchi_dict)
 end
 
-open("not_found_subset.json", "w") do f
+open("data/not_found_subset.json", "w") do f
     JSON.print(f, not_found)
 end
 

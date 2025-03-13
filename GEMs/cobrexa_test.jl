@@ -1,13 +1,17 @@
-using Pkg; Pkg.activate("GEMs")
-cd("GEMs")
+using Pkg
+if basename(pwd()) != "GEMs"
+    cd("GEMs")
+end
+
+Pkg.activate(".")
 using COBREXA, Tulip, Escher, CairoMakie, Colors
 
 # open the SBML file and load the contents
-model = load_model("e_coli_core.xml")
+model = load_model("data/e_coli_core.xml")
 
 # visualize the metabolism 
 escherplot(
-    "e_coli_core_map.json"; 
+    "data/e_coli_core_map.json"; 
     reaction_show_text = true,
     reaction_edge_color = :grey,
     metabolite_show_text = true,
@@ -25,7 +29,7 @@ tol = 1e-3 # threshold if reaction is active
 
 # ids from e coli model are different in e coli map so the red fluxes don't show
 escherplot(
-    "e_coli_core_map.json";
+    "data/e_coli_core_map.json";
     reaction_edge_colors = Dict(id => :red for (id, flux) in fluxes if abs(flux) > tol),
 )
 hidexdecorations!(current_axis())

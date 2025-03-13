@@ -1,3 +1,10 @@
+using Pkg
+if basename(pwd()) != "AT_exploration"
+    cd("AT_exploration")
+end
+
+Pkg.activate(".")
+
 using Catalyst, OrdinaryDiffEq, Plots, GraphRecipes, JumpProcesses, DataFrames, Statistics, Base.Threads
 #functions--------------------------------------------------------------------------------
 
@@ -113,10 +120,10 @@ end
 building_blocks = ["A", "B", "N"]
 upper_bound = 6
 rate = 1
-selection_rate = 10
+selection_rate = 100
 
 #set to "" for no selection
-selection_target = ""
+selection_target = "BANANA"
 
 upregulated = [["B(t)", "A(t)"], ["N(t)", "A(t)"], ["NA(t)", "NA(t)"], ["BA(t)", "NANA(t)"]]
 t = default_t()
@@ -125,7 +132,7 @@ t = default_t()
 reactions, species = create_reactions(building_blocks, upper_bound, rate; selection_target, selection_rate, upreg_reactions = upregulated)
 @named jumpmodel = ReactionSystem(reactions, t)
 
-u0 = vcat([Symbol(replace(string(sp), "(t)" => "")) => 5000 for sp in species[1:length(building_blocks)]], [Symbol(replace(string(sp), "(t)" => "")) => 0 for sp in species[length(building_blocks)+1:end]])
+u0 = vcat([Symbol(replace(string(sp), "(t)" => "")) => 500 for sp in species[1:length(building_blocks)]], [Symbol(replace(string(sp), "(t)" => "")) => 0 for sp in species[length(building_blocks)+1:end]])
 tspan = (0.0, 0.02)
 ps = []
 
@@ -141,13 +148,13 @@ sol_ai = map(assembly_index, species_strings)
 
 df = DataFrame(name = species_strings, length = sol_lengths, ai = sol_ai)
 
-num_sims = 50
+num_sims = 100
 
-# lengths = []
-# ais = []
-# assemblies = []
-# targets = []
-# times = []
+lengths = []
+ais = []
+assemblies = []
+targets = []
+times = []
 target_values = []
 
 p_a = plot(title = "Assembly Through Time", xlabel = "Time", ylabel = "Assembly", dpi = 600, legend=false, ylims = (0, 80));
@@ -156,39 +163,39 @@ p_t = plot(title = "Target Species Through Time", xlabel = "Time", ylabel = "Tar
 @time @threads for _ in 1:num_sims
     
     sol = solve(jump_prob, SSAStepper())
-    # push!(times, sol.t)
+    push!(times, sol.t)
 
-    # len_data = []
-    # for (i, len) in enumerate(unique(sol_lengths))
+    len_data = []
+    for (i, len) in enumerate(unique(sol_lengths))
 
-    #     group_indices = findall(df.length .== len)
+        group_indices = findall(df.length .== len)
 
-    #     group_sum = [sum([sol.u[t][idx] for idx in group_indices]) for t in 1:length(sol.t)]
+        group_sum = [sum([sol.u[t][idx] for idx in group_indices]) for t in 1:length(sol.t)]
 
-    #     push!(len_data, group_sum)
-    # end
-    # push!(lengths, len_data)
+        push!(len_data, group_sum)
+    end
+    push!(lengths, len_data)
     
-    # assembly_index_data = []
-    # for (i, ai) in enumerate(unique(sol_ai))
+    assembly_index_data = []
+    for (i, ai) in enumerate(unique(sol_ai))
 
-    #     group_indices = findall(df.ai .== ai)
+        group_indices = findall(df.ai .== ai)
 
-    #     group_sum = [sum([sol.u[t][idx] for idx in group_indices]) for t in 1:length(sol.t)]
+        group_sum = [sum([sol.u[t][idx] for idx in group_indices]) for t in 1:length(sol.t)]
 
-    #     push!(assembly_index_data, group_sum)
-    # end
-    # push!(ais, assembly_index_data)
+        push!(assembly_index_data, group_sum)
+    end
+    push!(ais, assembly_index_data)
     
     av = assembly_vector(sol, df)
     plot!(p_a, sol.t, av, alpha = 0.3, color = :blue);
-    # push!(assemblies, av)
+    push!(assemblies, av)
 
     target_of_interest = "BANANA"
     tv = target_vector(sol, species_strings, target_of_interest)
     append!(target_values, tv[end])
     plot!(p_t, sol.t, tv, alpha = 0.3, color = :red);
-    # push!(targets, tv)
+    push!(targets, tv)
 end
 
 display(p_a)

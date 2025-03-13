@@ -7,7 +7,7 @@ Pkg.activate(".")
 
 using HTTP, JSON, JSON3, DataFrames
 
-inchi_dict = Dict(JSON.parsefile("inchi_dict_subset.json"))
+inchi_dict = Dict(JSON.parsefile("data/inchi_dict_subset.json"))
 inchi_df = DataFrame(cpd = collect(keys(inchi_dict)), inchi = collect(values(inchi_dict)))
 
 inchi_list = inchi_df.inchi
@@ -49,6 +49,6 @@ for i in 1:batch_size:length(inchi_list)
     full_dictionary = merge(full_dictionary, results)
 end
 
-open("MA_dict.json", "w") do f
+open("data/MA_dict.json", "w") do f
     JSON.print(f, full_dictionary)
 end
