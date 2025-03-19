@@ -32,10 +32,10 @@ for i in 1:length(reaction_ids)
         equation1 = reaction_dict[rxn_id1][1]
         equation2 = reaction_dict[rxn_id2][1]
 
-        in1 = [compound.match for compound in eachmatch(r"C\d{5}", split(equation1, "<=>")[1])]
-        out1 = [compound.match for compound in eachmatch(r"C\d{5}", split(equation1, "<=>")[2])]
-        in2 = [compound.match for compound in eachmatch(r"C\d{5}", split(equation2, "<=>")[1])]
-        out2 = [compound.match for compound in eachmatch(r"C\d{5}", split(equation2, "<=>")[2])]
+        in1 = [compound.match for compound in eachmatch(r"C\d{5}", split(equation1, "<=>")[1]) if compound.match != "C00001"]
+        out1 = [compound.match for compound in eachmatch(r"C\d{5}", split(equation1, "<=>")[2]) if compound.match != "C00001"]
+        in2 = [compound.match for compound in eachmatch(r"C\d{5}", split(equation2, "<=>")[1]) if compound.match != "C00001"]
+        out2 = [compound.match for compound in eachmatch(r"C\d{5}", split(equation2, "<=>")[2]) if compound.match != "C00001"]
 
         if length(intersect(in1, out2)) > 0 || length(intersect(out1, in2)) > 0 || length(intersect(in1, in2)) > 0 || length(intersect(out1, out2)) > 0
             add_edge!(G, i, j, 1)
