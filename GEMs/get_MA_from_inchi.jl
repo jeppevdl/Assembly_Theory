@@ -5,16 +5,17 @@ end
 
 Pkg.activate(".")
 
-using HTTP, JSON, JSON3, DataFrames
+using HTTP, JSON, JSON3, DataFrames, ProgressMeter
 
-inchi_dict = Dict(JSON.parsefile("data/inchi_dict_subset.json"))
+inchi_json = JSON.parsefile("data/valid_inchi.json")
+inchi_dict = Dict(k => v for d in inchi_json for (k, v) in d)
 inchi_df = DataFrame(cpd = collect(keys(inchi_dict)), inchi = collect(values(inchi_dict)))
 
 inchi_list = inchi_df.inchi
 
 full_dictionary = Dict{String, Any}()
 
-function batch_lookup_inchis(inchi_list::Vector{Any}, batch_size::Int)
+function batch_lookup_inchis(inchi_list::Vector{String}, batch_size::Int)
     results = Dict{String, Any}()
     base_url = "http://molecular-assembly.com/batch_lookup"
 
@@ -30,6 +31,7 @@ function batch_lookup_inchis(inchi_list::Vector{Any}, batch_size::Int)
 
         response = HTTP.get(base_url, query = dict_inchis)
         response_data = JSON3.read(String(response.body))
+
         for entry in response_data
             inchi_id = entry["inchi"]
             cpd_id = inchi_df.cpd[inchi_df.inchi .== inchi_id][1]
@@ -42,13 +44,15 @@ function batch_lookup_inchis(inchi_list::Vector{Any}, batch_size::Int)
     return results
 end
 
-batch_size = 5
+batch_size = 1
 
-for i in 1:batch_size:length(inchi_list)
-    results = batch_lookup_inchis(inchi_list[i:min(i + batch_size - 1, length(inchi_list))], batch_size)
+@showprogress for batch in collect(Iterators.partition(inchi_list, batch_size))
+    results = batch_lookup_inchis(Vector{String}(batch), batch_size)
     full_dictionary = merge(full_dictionary, results)
 end
 
-open("data/MA_dict.json", "w") do f
+@info "Collected MA values for $(length(collect(values(full_dictionary)))) compounds."
+
+open("data/MA_values.json", "w") do f
     JSON.print(f, full_dictionary)
 end
