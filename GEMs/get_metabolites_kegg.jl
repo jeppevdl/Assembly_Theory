@@ -67,12 +67,12 @@ end
 valid_inchi = [k => allinchi[k] for k in findall(!ismissing, allinchi)]
 missing_inchi = [k => allinchi[k] for k in findall(ismissing, allinchi)]
 
-open("data/inchi_dict_subset.json", "w") do f
+open("data/inchi_valid.json", "w") do f
     JSON.print(f, valid_inchi)
 end
 @info "Wrote valid InChI codes: data/inchi_valid.json"
 
-open("data/not_found_subset.json", "w") do f
+open("data/inchi_missing.json", "w") do f
     JSON.print(f, missing_inchi)
 end
 @info "Wrote missing InChI codes: data/inchi_missing.json"

@@ -7,7 +7,7 @@ Pkg.activate(".")
 
 using HTTP, JSON, KEGGAPI, Graphs, GraphPlot, SimpleWeightedGraphs, GraphMakie, CairoMakie, NetworkLayout
 
-reference_map = "map00300"
+reference_map = "map01310"
 reactions = KEGGAPI.link("rn", reference_map).data[2]
 
 # url = "https://rest.kegg.jp/link/rn/$reference_map"
