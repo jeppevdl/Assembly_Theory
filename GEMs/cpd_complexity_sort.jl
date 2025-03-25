@@ -91,7 +91,17 @@ end
 complexities.counted_rings = count_rings(complexities)
 
 function count_atoms(complexities::DataFrame)
-	return(sum.(collect.(values.(complexities.n_atoms))))
+	counted_atoms = []
+	for compound in eachrow(complexities)
+		sum = 0
+		for (key, value) in compound.n_atoms
+			if key != :H
+				sum += value
+			end
+		end
+		push!(counted_atoms, sum)
+	end
+	return counted_atoms
 end
 
 complexities.counted_atoms = count_atoms(complexities)
@@ -110,8 +120,23 @@ complexities.sp3 = count_hybr(complexities)[3]
 
 # Sort by complexity
 sort!(complexities, [:counted_atoms, :sp3, :sp2, :sp, :counted_rings], rev=true)
+@info "Done calculating complexity of compounds"
 
 open("data/complexities_$pathway.json", "w") do io
-    println(io)
 	JSON3.write(io, complexities)
 end
+
+ma_values = JSON3.read("data/MA_values.json", Dict)
+
+# Get MA values for each compound
+@info "Retrieving MA values for compounds..."
+complexities.ma = Vector{Union{Missing,Float64}}(missing, nrow(complexities))
+@showprogress for i in 1:nrow(complexities)
+	cpd = complexities.id[i]
+	if haskey(ma_values, cpd)
+		complexities.ma[i] = ma_values[cpd]["MA"]
+	end
+end
+
+n = count(x -> !ismissing(x), complexities.ma)
+@info "Found MA values for $n compounds"
