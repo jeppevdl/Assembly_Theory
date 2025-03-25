@@ -1,0 +1,2 @@
+[2025-03-25 21:38:30.836753](info): File Name: molfiles/C00037.mol
+[2025-03-25 21:38:30.836753](error): Failed to extract molecule data (does the file exist?)

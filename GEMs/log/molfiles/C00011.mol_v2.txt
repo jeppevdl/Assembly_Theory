@@ -1,0 +1,21 @@
+[2025-03-25 21:44:14.152322](info): File Name: molfiles/C00011.mol
+[2025-03-25 21:44:14.166438](info): 
+Molecule InChI InChI=1S/CO2/c2-1-3
+Molecule InChI KeyCURLTUGMZLYLDI-UHFFFAOYSA-N
+
+[2025-03-25 21:44:14.166438](info): 1 subgraphs
+[2025-03-25 21:44:14.166438](info): 1 unique subgraphs
+[2025-03-25 21:44:14.166438](info): 0 number partitions
+[2025-03-25 21:44:14.166438](info): FINAL COMPLEXITY 2, []
+
+[2025-03-25 21:44:14.166438](info): Molecule Data
+[2025-03-25 21:44:14.166438](info): Atoms
+[2025-03-25 21:44:14.166438](info): 0 - C
+[2025-03-25 21:44:14.166438](info): 1 - O
+[2025-03-25 21:44:14.166438](info): 2 - O
+[2025-03-25 21:44:14.166438](info): Bonds
+[2025-03-25 21:44:14.166438](info): 0 - Atoms: 0, 1 Type: 2
+[2025-03-25 21:44:14.166438](info): 1 - Atoms: 0, 2 Type: 2
+[2025-03-25 21:44:14.166438](info): PATHWAY BREAKDOWN
+[2025-03-25 21:44:14.166438](info): no valid pathways, max complexity 2
+[2025-03-25 21:44:14.166438](info): Completed: 0.0070007 seconds

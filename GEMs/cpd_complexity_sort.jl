@@ -22,9 +22,9 @@ function KEGGAPI.kegg_get(query::Vector{String}, option::String, retries::Int)
 	end
 end
 
-pathway = "map00010" # Glycolysis / Gluconeogenesis
+pathway = "map01230"
 
-# Get unique paths, unique compounds and relationshipo between both
+# Get unique paths, unique compounds and relationship between both
 @info "Retrieving pathways and it's compounds from KEGG..."
 path2cpd, allpath, allcpd = begin
 	pathways, compounds = KEGGAPI.link("cpd", pathway).data
@@ -82,6 +82,7 @@ complexities = DataFrame(id=String[], n_atoms=Dict{Symbol,Int}[], hybr=Vector{In
 		end
     end
 end
+@info "Calculated complexity values for $(nrow(complexities)) compounds out of $(length(allmol))"
 
 function count_rings(complexities::DataFrame)
 	unique_rings = unique.(filter.(x -> x > 0, complexities.n_rings))
@@ -120,7 +121,7 @@ complexities.sp3 = count_hybr(complexities)[3]
 
 # Sort by complexity
 sort!(complexities, [:counted_atoms, :sp3, :sp2, :sp, :counted_rings], rev=true)
-@info "Done calculating complexity of compounds"
+@info "Done sorting compounds based on complexity"
 
 ma_values = JSON3.read("data/MA_values.json", Dict)
 

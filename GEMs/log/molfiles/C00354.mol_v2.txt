@@ -1,102 +1,102 @@
-[2025-03-25 20:59:53.990802](info): File Name: molfiles/C00354.mol
-[2025-03-25 20:59:53.992974](info): 
+[2025-03-25 21:44:47.395462](info): File Name: molfiles/C00354.mol
+[2025-03-25 21:44:47.406669](info): 
 Molecule InChI InChI=1S/C6H14O12P2/c7-4-3(1-16-19(10,11)12)18-6(9,5(4)8)2-17-20(13,14)15/h3-5,7-9H,1-2H2,(H2,10,11,12)(H2,13,14,15)
 Molecule InChI KeyRNBGYGVWRKECFJ-UHFFFAOYSA-N
 
-[2025-03-25 20:59:54.006260](info): 8480 subgraphs
-[2025-03-25 21:00:00.107916](info): 3484 unique subgraphs
-[2025-03-25 21:00:00.107916](info): 153 number partitions
-[2025-03-25 21:00:00.107916](info): Complexity is not less than 6
-[2025-03-25 21:00:00.107916](info): Complexity is not less than 7
-[2025-03-25 21:00:00.107916](info): Complexity is not less than 8
-[2025-03-25 21:00:00.107916](info): 7 number partitions
-[2025-03-25 21:00:00.107916](info): Valid Pathway, complexity 11
-[2025-03-25 21:00:00.107916](info): Complexity is not less than 9
-[2025-03-25 21:00:00.107916](info): 6 number partitions
-[2025-03-25 21:00:00.107916](info): Valid Pathway, complexity 12
-[2025-03-25 21:00:00.107916](info): 6 number partitions
-[2025-03-25 21:00:00.107916](info): Valid Pathway, complexity 12
-[2025-03-25 21:00:00.107916](info): 6 number partitions
-[2025-03-25 21:00:00.107916](info): Valid Pathway, complexity 12
-[2025-03-25 21:00:00.107916](info): 6 number partitions
-[2025-03-25 21:00:00.107916](info): Valid Pathway, complexity 12
-[2025-03-25 21:00:00.107916](info): 3 number partitions
-[2025-03-25 21:00:00.107916](info): Valid Pathway, complexity 12
-[2025-03-25 21:00:00.107916](info): 3 number partitions
-[2025-03-25 21:00:00.107916](info): Valid Pathway, complexity 12
-[2025-03-25 21:00:00.123789](info): Complexity is not less than 10
-[2025-03-25 21:00:00.123789](info): 3 number partitions
-[2025-03-25 21:00:00.123789](info): Valid Pathway, complexity 12
-[2025-03-25 21:00:00.123789](info): Valid Pathway, complexity 12
-[2025-03-25 21:00:00.123789](info): 3 number partitions
-[2025-03-25 21:00:00.123789](info): Valid Pathway, complexity 12
-[2025-03-25 21:00:00.123789](info): Valid Pathway, complexity 12
-[2025-03-25 21:00:00.123789](info): 3 number partitions
-[2025-03-25 21:00:00.123789](info): Valid Pathway, complexity 12
-[2025-03-25 21:00:00.123789](info): Valid Pathway, complexity 12
-[2025-03-25 21:00:00.123789](info): 3 number partitions
-[2025-03-25 21:00:00.123789](info): Valid Pathway, complexity 12
-[2025-03-25 21:00:00.123789](info): Valid Pathway, complexity 12
-[2025-03-25 21:00:00.123789](info): Valid Pathway, complexity 13
-[2025-03-25 21:00:00.123789](info): Valid Pathway, complexity 13
-[2025-03-25 21:00:00.123789](info): 3 number partitions
-[2025-03-25 21:00:00.123789](info): Valid Pathway, complexity 12
-[2025-03-25 21:00:00.123789](info): 3 number partitions
-[2025-03-25 21:00:00.123789](info): Valid Pathway, complexity 12
-[2025-03-25 21:00:00.139641](info): Complexity is not less than 11
-[2025-03-25 21:00:00.139641](info): FINAL COMPLEXITY 11, [[6752 8368 ] ]
+[2025-03-25 21:44:47.415372](info): 8480 subgraphs
+[2025-03-25 21:44:53.364539](info): 3484 unique subgraphs
+[2025-03-25 21:44:53.364539](info): 153 number partitions
+[2025-03-25 21:44:53.364539](info): Complexity is not less than 6
+[2025-03-25 21:44:53.364539](info): Complexity is not less than 7
+[2025-03-25 21:44:53.364539](info): Complexity is not less than 8
+[2025-03-25 21:44:53.379407](info): 7 number partitions
+[2025-03-25 21:44:53.379407](info): Valid Pathway, complexity 11
+[2025-03-25 21:44:53.380548](info): Complexity is not less than 9
+[2025-03-25 21:44:53.381407](info): 6 number partitions
+[2025-03-25 21:44:53.381407](info): Valid Pathway, complexity 12
+[2025-03-25 21:44:53.381407](info): 6 number partitions
+[2025-03-25 21:44:53.381407](info): Valid Pathway, complexity 12
+[2025-03-25 21:44:53.381407](info): 6 number partitions
+[2025-03-25 21:44:53.381407](info): Valid Pathway, complexity 12
+[2025-03-25 21:44:53.381407](info): 6 number partitions
+[2025-03-25 21:44:53.381407](info): Valid Pathway, complexity 12
+[2025-03-25 21:44:53.381407](info): 3 number partitions
+[2025-03-25 21:44:53.381407](info): Valid Pathway, complexity 12
+[2025-03-25 21:44:53.381407](info): 3 number partitions
+[2025-03-25 21:44:53.381407](info): Valid Pathway, complexity 12
+[2025-03-25 21:44:53.381407](info): Complexity is not less than 10
+[2025-03-25 21:44:53.381407](info): 3 number partitions
+[2025-03-25 21:44:53.381407](info): Valid Pathway, complexity 12
+[2025-03-25 21:44:53.381407](info): Valid Pathway, complexity 12
+[2025-03-25 21:44:53.381407](info): 3 number partitions
+[2025-03-25 21:44:53.381407](info): Valid Pathway, complexity 12
+[2025-03-25 21:44:53.381407](info): Valid Pathway, complexity 12
+[2025-03-25 21:44:53.381407](info): 3 number partitions
+[2025-03-25 21:44:53.381407](info): Valid Pathway, complexity 12
+[2025-03-25 21:44:53.381407](info): Valid Pathway, complexity 12
+[2025-03-25 21:44:53.381407](info): 3 number partitions
+[2025-03-25 21:44:53.381407](info): Valid Pathway, complexity 12
+[2025-03-25 21:44:53.381407](info): Valid Pathway, complexity 12
+[2025-03-25 21:44:53.381407](info): Valid Pathway, complexity 13
+[2025-03-25 21:44:53.381407](info): Valid Pathway, complexity 13
+[2025-03-25 21:44:53.381407](info): 3 number partitions
+[2025-03-25 21:44:53.381407](info): Valid Pathway, complexity 12
+[2025-03-25 21:44:53.381407](info): 3 number partitions
+[2025-03-25 21:44:53.381407](info): Valid Pathway, complexity 12
+[2025-03-25 21:44:53.397760](info): Complexity is not less than 11
+[2025-03-25 21:44:53.397760](info): FINAL COMPLEXITY 11, [[6752 8368 ] ]
 
-[2025-03-25 21:00:00.139641](info): Molecule Data
-[2025-03-25 21:00:00.139641](info): Atoms
-[2025-03-25 21:00:00.139641](info): 0 - C
-[2025-03-25 21:00:00.139641](info): 1 - C
-[2025-03-25 21:00:00.139641](info): 2 - C
-[2025-03-25 21:00:00.139641](info): 3 - O
-[2025-03-25 21:00:00.139641](info): 4 - C
-[2025-03-25 21:00:00.139641](info): 5 - O
-[2025-03-25 21:00:00.139641](info): 6 - O
-[2025-03-25 21:00:00.139641](info): 7 - C
-[2025-03-25 21:00:00.139641](info): 8 - C
-[2025-03-25 21:00:00.139641](info): 9 - O
-[2025-03-25 21:00:00.139641](info): 10 - O
-[2025-03-25 21:00:00.139641](info): 11 - O
-[2025-03-25 21:00:00.139641](info): 12 - P
-[2025-03-25 21:00:00.139641](info): 13 - P
-[2025-03-25 21:00:00.139641](info): 14 - O
-[2025-03-25 21:00:00.139641](info): 15 - O
-[2025-03-25 21:00:00.139641](info): 16 - O
-[2025-03-25 21:00:00.139641](info): 17 - O
-[2025-03-25 21:00:00.139641](info): 18 - O
-[2025-03-25 21:00:00.139641](info): 19 - O
-[2025-03-25 21:00:00.139641](info): Bonds
-[2025-03-25 21:00:00.139641](info): 0 - Atoms: 0, 1 Type: 1
-[2025-03-25 21:00:00.139641](info): 1 - Atoms: 1, 2 Type: 1
-[2025-03-25 21:00:00.139641](info): 2 - Atoms: 2, 3 Type: 1
-[2025-03-25 21:00:00.139641](info): 3 - Atoms: 3, 4 Type: 1
-[2025-03-25 21:00:00.139641](info): 4 - Atoms: 0, 4 Type: 1
-[2025-03-25 21:00:00.139641](info): 5 - Atoms: 0, 5 Type: 1
-[2025-03-25 21:00:00.139641](info): 6 - Atoms: 1, 6 Type: 1
-[2025-03-25 21:00:00.139641](info): 7 - Atoms: 4, 7 Type: 1
-[2025-03-25 21:00:00.139641](info): 8 - Atoms: 2, 8 Type: 1
-[2025-03-25 21:00:00.139641](info): 9 - Atoms: 2, 9 Type: 1
-[2025-03-25 21:00:00.139641](info): 10 - Atoms: 7, 10 Type: 1
-[2025-03-25 21:00:00.139641](info): 11 - Atoms: 8, 11 Type: 1
-[2025-03-25 21:00:00.139641](info): 12 - Atoms: 11, 12 Type: 1
-[2025-03-25 21:00:00.139641](info): 13 - Atoms: 10, 13 Type: 1
-[2025-03-25 21:00:00.139641](info): 14 - Atoms: 13, 14 Type: 2
-[2025-03-25 21:00:00.139641](info): 15 - Atoms: 13, 15 Type: 1
-[2025-03-25 21:00:00.139641](info): 16 - Atoms: 13, 16 Type: 1
-[2025-03-25 21:00:00.139641](info): 17 - Atoms: 12, 17 Type: 2
-[2025-03-25 21:00:00.139641](info): 18 - Atoms: 12, 18 Type: 1
-[2025-03-25 21:00:00.139641](info): 19 - Atoms: 12, 19 Type: 1
-[2025-03-25 21:00:00.139641](info): PATHWAY BREAKDOWN
-[2025-03-25 21:00:00.139641](info): [6752 8368 ]
-[2025-03-25 21:00:00.139641](info): 6752: [11100001100101000110, 8, true], [1 2 6 8 11 12 17 18 19 ]
-[2025-03-25 21:00:00.139641](info): 8368: [00011110010010111000, 9, false], [3 4 5 7 10 13 14 15 16 ]
-[2025-03-25 21:00:00.139641](info): Recursion Depth 1 for subgraph 6752
-[2025-03-25 21:00:00.139641](info): [6075 8433 ]
-[2025-03-25 21:00:00.139641](info): 6075: [00000000000000000110, 2, true], [1 2 ]
-[2025-03-25 21:00:00.139641](info): 8433: [00000000100100000000, 2, true], [8 11 ]
-[2025-03-25 21:00:00.139641](info): Recursion Depth 2 for subgraph 6075
-[2025-03-25 21:00:00.139641](info): no breakdown
-[2025-03-25 21:00:00.139641](info): Completed: 6.15274 seconds
+[2025-03-25 21:44:53.397760](info): Molecule Data
+[2025-03-25 21:44:53.397760](info): Atoms
+[2025-03-25 21:44:53.397760](info): 0 - C
+[2025-03-25 21:44:53.397760](info): 1 - C
+[2025-03-25 21:44:53.397760](info): 2 - C
+[2025-03-25 21:44:53.397760](info): 3 - O
+[2025-03-25 21:44:53.397760](info): 4 - C
+[2025-03-25 21:44:53.397760](info): 5 - O
+[2025-03-25 21:44:53.397760](info): 6 - O
+[2025-03-25 21:44:53.397760](info): 7 - C
+[2025-03-25 21:44:53.397760](info): 8 - C
+[2025-03-25 21:44:53.397760](info): 9 - O
+[2025-03-25 21:44:53.397760](info): 10 - O
+[2025-03-25 21:44:53.397760](info): 11 - O
+[2025-03-25 21:44:53.397760](info): 12 - P
+[2025-03-25 21:44:53.397760](info): 13 - P
+[2025-03-25 21:44:53.397760](info): 14 - O
+[2025-03-25 21:44:53.397760](info): 15 - O
+[2025-03-25 21:44:53.397760](info): 16 - O
+[2025-03-25 21:44:53.397760](info): 17 - O
+[2025-03-25 21:44:53.397760](info): 18 - O
+[2025-03-25 21:44:53.397760](info): 19 - O
+[2025-03-25 21:44:53.397760](info): Bonds
+[2025-03-25 21:44:53.397760](info): 0 - Atoms: 0, 1 Type: 1
+[2025-03-25 21:44:53.397760](info): 1 - Atoms: 1, 2 Type: 1
+[2025-03-25 21:44:53.397760](info): 2 - Atoms: 2, 3 Type: 1
+[2025-03-25 21:44:53.397760](info): 3 - Atoms: 3, 4 Type: 1
+[2025-03-25 21:44:53.397760](info): 4 - Atoms: 0, 4 Type: 1
+[2025-03-25 21:44:53.397760](info): 5 - Atoms: 0, 5 Type: 1
+[2025-03-25 21:44:53.397760](info): 6 - Atoms: 1, 6 Type: 1
+[2025-03-25 21:44:53.397760](info): 7 - Atoms: 4, 7 Type: 1
+[2025-03-25 21:44:53.397760](info): 8 - Atoms: 2, 8 Type: 1
+[2025-03-25 21:44:53.397760](info): 9 - Atoms: 2, 9 Type: 1
+[2025-03-25 21:44:53.397760](info): 10 - Atoms: 7, 10 Type: 1
+[2025-03-25 21:44:53.397760](info): 11 - Atoms: 8, 11 Type: 1
+[2025-03-25 21:44:53.397760](info): 12 - Atoms: 11, 12 Type: 1
+[2025-03-25 21:44:53.397760](info): 13 - Atoms: 10, 13 Type: 1
+[2025-03-25 21:44:53.397760](info): 14 - Atoms: 13, 14 Type: 2
+[2025-03-25 21:44:53.397760](info): 15 - Atoms: 13, 15 Type: 1
+[2025-03-25 21:44:53.397760](info): 16 - Atoms: 13, 16 Type: 1
+[2025-03-25 21:44:53.397760](info): 17 - Atoms: 12, 17 Type: 2
+[2025-03-25 21:44:53.397760](info): 18 - Atoms: 12, 18 Type: 1
+[2025-03-25 21:44:53.397760](info): 19 - Atoms: 12, 19 Type: 1
+[2025-03-25 21:44:53.397760](info): PATHWAY BREAKDOWN
+[2025-03-25 21:44:53.397760](info): [6752 8368 ]
+[2025-03-25 21:44:53.397760](info): 6752: [11100001100101000110, 8, true], [1 2 6 8 11 12 17 18 19 ]
+[2025-03-25 21:44:53.397760](info): 8368: [00011110010010111000, 9, false], [3 4 5 7 10 13 14 15 16 ]
+[2025-03-25 21:44:53.397760](info): Recursion Depth 1 for subgraph 6752
+[2025-03-25 21:44:53.397760](info): [6075 8433 ]
+[2025-03-25 21:44:53.397760](info): 6075: [00000000000000000110, 2, true], [1 2 ]
+[2025-03-25 21:44:53.397760](info): 8433: [00000000100100000000, 2, true], [8 11 ]
+[2025-03-25 21:44:53.397760](info): Recursion Depth 2 for subgraph 6075
+[2025-03-25 21:44:53.397760](info): no breakdown
+[2025-03-25 21:44:53.397760](info): Completed: 6.00784 seconds
