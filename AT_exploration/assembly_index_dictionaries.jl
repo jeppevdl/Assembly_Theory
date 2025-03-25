@@ -1,8 +1,8 @@
 # Get assembly index of target `t`
 function assembly_index(t; return_visited = false) # aka "Main"
-    substruct_dic = Dict{String, Int64}()
+    ai_dic = Dict{String, Int64}()
     visited_dic = Dict{String, Vector{String}}()
-    A, visited, _ = _assembly_index(t, String[], substruct_dic, visited_dic)
+    A, visited = _assembly_index(t, String[], ai_dic, visited_dic)
     if return_visited
         return A, visited
     else
@@ -11,15 +11,15 @@ function assembly_index(t; return_visited = false) # aka "Main"
 end
 
 # Function calculating the assembly index of a compound `s`
-function _assembly_index(s, visited, substructure_dictionary, visited_dictionary) # aka "AssemblyIndex"
+function _assembly_index(s, visited, assembly_index_dictionary, visited_dictionary) # aka "AssemblyIndex"
     if s in visited
         # no construction cost for previously visited compounds
-        return 0, visited, false
-    elseif haskey(substructure_dictionary, s)
-        return substructure_dictionary[s], [visited; s], true 
+        return 0, visited
+    elseif haskey(assembly_index_dictionary, s)
+        return assembly_index_dictionary[s], [visited; s] 
     elseif length(s) <= 3
         # strings of length <= 3 can only be constructed in a set amount of combinations
-        return length(s) - 1, visited, false
+        return length(s) - 1, [visited; s]
     else
         # not yet visited "complex" compound => split into substructures
         substructure_pairs = getsubstructures(s)
@@ -28,12 +28,13 @@ function _assembly_index(s, visited, substructure_dictionary, visited_dictionary
         visiteds = Vector{Vector{String}}(undef, length(substructure_pairs))
         
         for (sp_idx, sp) in enumerate(substructure_pairs)
-            A1, visited1, found_in_dictionary1 = _assembly_index(sp[1], visited, substructure_dictionary, visited_dictionary)
-            A2, visited2, found_in_dictionary2 = _assembly_index(sp[2], [visited1; sp[1]], substructure_dictionary, visited_dictionary)
-            if found_in_dictionary1 &&  haskey(visited_dictionary, sp[2]) && sp[1] in visited_dictionary[sp[2]]
+            A1, visited1 = _assembly_index(sp[1], visited, assembly_index_dictionary, visited_dictionary)
+            A2, visited2 = _assembly_index(sp[2], [visited1; sp[1]], assembly_index_dictionary, visited_dictionary)
+            
+            if sp[1] in get(visited_dictionary, sp[2], [])
                 As[sp_idx] = A2 + 1
                 visiteds[sp_idx] = [visited2; sp[2]]
-            elseif found_in_dictionary2 && haskey(visited_dictionary, sp[1]) && sp[2] in visited_dictionary[sp[1]]
+            elseif sp[2] in get(visited_dictionary, sp[1], [])
                 As[sp_idx] = A1 + 1
                 visiteds[sp_idx] = [visited2; sp[2]]
             else
@@ -43,9 +44,10 @@ function _assembly_index(s, visited, substructure_dictionary, visited_dictionary
         end
 
         min_idx = argmin(As)
-        substructure_dictionary[s] = As[min_idx]
+        s == "DABRA" && println(As[min_idx], visiteds[min_idx])
+        assembly_index_dictionary[s] = As[min_idx]
         visited_dictionary[s] = visiteds[min_idx]
-        return As[min_idx], visiteds[min_idx], false
+        return As[min_idx], visiteds[min_idx]
     end
 end
 
@@ -59,7 +61,7 @@ assembly_index("CADABRA", return_visited = true)
 # # tests
 assembly_index("AAAA") == 2
 assembly_index("BANANA") == 4
-assembly_index("redrumredrumredrumredrumredrumredrumredrumredrumredrumredrum") # still takes too long
+@time assembly_index("redrumredrumredrumredrumredrumredrumredrumredrumredrumredrum")
 
 # # timing
 
@@ -67,7 +69,7 @@ assembly_index("redrumredrumredrumredrumredrumredrumredrumredrumredrumredrum") #
 @time assembly_index("BANANA")
 @time assembly_index("ABNNNBA")
 
-assembly_index("redrumredrumredrumredrumABCredrumredrumredrumredrum")
+@time assembly_index("redrumredrumredrumredrumABCredrumredrumredrumredrum")
 
 #still not fully correct
-assembly_index("ABCDEFXYZABCDEFMN", return_visited = true)
+i, v = assembly_index("ABCDEFXYZABCDEFMN", return_visited = true)

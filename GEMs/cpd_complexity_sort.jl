@@ -122,10 +122,6 @@ complexities.sp3 = count_hybr(complexities)[3]
 sort!(complexities, [:counted_atoms, :sp3, :sp2, :sp, :counted_rings], rev=true)
 @info "Done calculating complexity of compounds"
 
-open("data/complexities_$pathway.json", "w") do io
-	JSON3.write(io, complexities)
-end
-
 ma_values = JSON3.read("data/MA_values.json", Dict)
 
 # Get MA values for each compound
@@ -140,3 +136,21 @@ end
 
 n = count(x -> !ismissing(x), complexities.ma)
 @info "Found MA values for $n compounds"
+
+@info "Calculating MA values using molecular assembly algorithm..."
+@showprogress for i in nrow(complexities):-1:1
+	if ismissing(complexities.ma[i])
+		println(complexities.id[i])
+		output = readchomp(`powershell -Command "complexity molfiles/$(complexities.id[i]).mol"`)
+		m = match(r"complexity (\d+)", output)
+		if m !== nothing
+			println("MA: ", m[1])
+			complexities.ma[i] = parse(Float64, m[1])
+		end
+	end
+end
+@info "Done calculating MA values"
+
+open("data/complexities_$pathway.json", "w") do io
+	JSON3.write(io, complexities)
+end
