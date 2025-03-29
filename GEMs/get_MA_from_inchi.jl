@@ -30,8 +30,10 @@ function batch_lookup_inchis(inchi_list::Vector{String}, batch_size::Int)
         println("Query parameters: ", dict_inchis)
 
         response = HTTP.get(base_url, query = dict_inchis)
-        response_data = JSON3.read(String(response.body))
+        sleep(20)
 
+        response_data = JSON3.read(String(response.body))
+        println("number of values returned: ", length(response_data), " out of ", batch_size)
         for entry in response_data
             inchi_id = entry["inchi"]
             cpd_id = inchi_df.cpd[inchi_df.inchi .== inchi_id][1]

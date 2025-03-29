@@ -22,7 +22,7 @@ function KEGGAPI.kegg_get(query::Vector{String}, option::String, retries::Int)
 	end
 end
 
-pathway = "map01230"
+pathway = "pathway"
 
 # Get unique paths, unique compounds and relationship between both
 @info "Retrieving pathways and it's compounds from KEGG..."
@@ -36,7 +36,8 @@ path2cpd, allpath, allcpd = begin
 end
 @info "Found $(length(allcpd)) compounds associated to $(length(allpath)) pathways"
 
-compounds = path2cpd["path:"*pathway]
+# compounds = path2cpd["path:"*pathway]
+compounds = allcpd
 
 # get mol files for each compound
 @info "Retrieving mol files for compounds..."
@@ -55,6 +56,7 @@ allmol = Dict{String,Union{Missing,String}}()
         end
 	end
 end
+
 
 # Calculate complexity of compounds
 complexities = DataFrame(id=String[], n_atoms=Dict{Symbol,Int}[], hybr=Vector{Int}[], n_rings=Vector{Int}[])
