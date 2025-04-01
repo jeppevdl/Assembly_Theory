@@ -1,0 +1,18 @@
+* kegg-small
+
+Scripts necesssary to construct the /KEGG-small/ dataset.
+
+** Usage
+
+Inside this directory, run the following:
+
+#+BEGIN_SRC sh
+mkdir -p data/{metadata,lookup,adjmat}
+julia --project=. -e "using Pkg; Pkg.instantiate()"
+julia generate_kegg-small.jl
+julia get_kegg_compound_data.jl
+julia get_kegg_reaction_data.jl
+julia AutoKEGGRec.jl -i <(cut -f 1 data/kegg-small.tsv)
+#+END_SRC
+
+
