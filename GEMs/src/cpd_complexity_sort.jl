@@ -1,6 +1,6 @@
 using Pkg
 if basename(pwd()) != "GEMs"
-    cd("GEMs")
+    cd("C:/Users/jeppe/OneDrive/Documenten/Bioinformatics/Tweede master/Master Thesis/Assembly_Theory/GEMs")
 end
 Pkg.activate(".")
 
@@ -22,7 +22,7 @@ function KEGGAPI.kegg_get(query::Vector{String}, option::String, retries::Int)
 	end
 end
 
-pathway = "map00010"
+pathway = "pathway"
 
 # Get unique paths, unique compounds and relationship between both
 @info "Retrieving pathways and it's compounds from KEGG..."
@@ -43,19 +43,31 @@ compounds = allcpd
 @info "Retrieving mol files for compounds..."
 allmol = Dict{String,Union{Missing,String}}()
 @showprogress for batch in collect(Iterators.partition(compounds, 10))
-	try
-		sleep(0.4)
-		batch_mol = KEGGAPI.kegg_get(String.(batch), "mol", 5) |> r -> split(r[2][1], "\$\$\$\$\n", keepempty=false)
-        map(zip(batch,batch_mol)) do (cpd,mol)
-			allmol[cpd] = mol
-        end
-    catch e
-		@warn e
-        map(batch) do cpd
-			allmol[cpd] = missing
-        end
+	batch_mol = nothing
+	tries = 0
+	while isnothing(batch_mol)
+		try
+			sleep(1)
+			batch_mol = KEGGAPI.kegg_get(String.(batch), "mol", 5) |> r -> split(r[2][1], "\$\$\$\$\n", keepempty=false)
+			map(zip(batch,batch_mol)) do (cpd,mol)
+				allmol[cpd] = mol
+			end
+		catch e
+			@warn e
+			@info "Sleeping for a minute"
+            sleep(60)
+			if tries > 2
+				@error "Failed 2 times to retrieve information, aborting"
+				map(zip(batch,batch_mol)) do (cpd,mol)
+					allmol[cpd] = missing
+				end
+				exit(1)
+			end
+			tries += 1
+		end
 	end
 end
+@info "Found $(length(filter(x -> !ismissing(x), allmol))) out of $(length(allcpd)) compounds with mol files"
 
 # Calculate complexity of compounds
 complexities = DataFrame(id=String[], n_atoms=Dict{Symbol,Int}[], hybr=Vector{Int}[], n_rings=Vector{Int}[])
