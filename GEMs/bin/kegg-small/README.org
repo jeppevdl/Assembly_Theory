@@ -1,0 +1,62 @@
+* kegg-small
+
+Scripts necesssary to construct the /KEGG-small/ dataset.
+
+** Usage
+
+Inside this directory, run the following:
+
+#+BEGIN_SRC sh
+mkdir -p data/{metadata,lookup,adjmat}
+julia --project=. -e "using Pkg; Pkg.instantiate()"
+julia generate_kegg-small.jl
+julia get_kegg_compound_data.jl
+julia get_kegg_reaction_data.jl
+julia AutoKEGGRec.jl -i <(cut -f 1 data/kegg-small.tsv)
+#+END_SRC
+
+Alternatively, if =gnu-make= is available:
+
+#+BEGIN_SRC
+make prepare
+#+END_SRC
+
+** Explanation
+
+*** Scripts
+
+- =generate_kegg-small.jl= generates the KEGG ORGANISM subset based on keeping 1 organism per phylum.
+- =get_kegg_compounds_data.jl= generates a JSON file with all KEGG COMPOUND data.
+- =get_kegg_reactions_data.jl= generates a JSON file with all KEGG REACTION data.
+- =AutoKEGGRec.jl= reconstruct metabolic networks for organisms found in KEGG based on input organism codes.
+
+Additionally, there is a =Makefile= for easier preparation (=make prepare=) and cleaning (=make clean=) of
+data and the =describe-kegg-small.jl= Pluto notebook to describe the dataset based on graph characteristics,
+metabolic network characteristics and reactions (not finished yet).
+
+*** Outputs
+
+On preparation, the expected output is the following:
+
+
+#+BEGIN_SRC
+data/
+├── kegg-small.lst
+├── kegg-small.tsv
+├── report_AutoKEGGRec_latest.json -> ./report_AutoKEGGRec_v20250320a.json
+├── report_AutoKEGGRec_v20250320a.json
+├── adjmat/
+├── lookup/
+└── metadata/
+#+END_SRC
+
+- =kegg-small.lst= is the KEGG ORGANISM codes found in the subset
+- =kegg-small.tsv= contains all the information related to the KEGG ORGANISM codes
+- =report_AutoKEGGRec_latest.json= contains information on the number of genes, reactions, EC numbers, compounds,
+  etc. for each organism.
+- =report_AutoKEGGRec_vXXX.json= same as the aformentioned file.
+- =adjmat/= contains all the binary encoded adjacency matrices for the reconstructed metabolic networks. 
+- =lookup/= contains the look up tables for node index to node name.
+- =metadata/= contains the metadata related to the compounds and reactions found in KEGG.
+
+The last two should used in conjunction whenever one intends to map biological information to a node in the graph.
