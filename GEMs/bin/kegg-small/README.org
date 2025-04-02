@@ -15,4 +15,9 @@ julia get_kegg_reaction_data.jl
 julia AutoKEGGRec.jl -i <(cut -f 1 data/kegg-small.tsv)
 #+END_SRC
 
+Alternatively, if =gnu-make= is available:
+
+#+BEGIN_SRC
+make prepare
+#+END_SRC
 
