@@ -1,0 +1,3 @@
+[submodule "GEMs/bin/assembly_go"]
+	path = GEMs/bin/assembly_go
+	url = git@github.com:croningp/assembly_go.git
