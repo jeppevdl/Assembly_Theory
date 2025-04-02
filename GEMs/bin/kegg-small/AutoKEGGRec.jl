@@ -85,9 +85,13 @@ function main(args)
     @info "First 5 organisms: $(join(first(allorganisms, 5), "; "))"
 
     @info "Creating output directories"
-    !isdir(args["output"]) ? mkdir(args["output"]) : @info "Found output directory, skipping creation"
-    for p in ["adjmat", "lookup"]
-        !isdir(args["output"] * "/$p") ? mkdir(args["output"] * "/$p") : error("Found output directory")
+    for p in ["", "adjmat", "lookup"]
+		if !isdir(args["output"] * "/$p")
+			@info "Creating `$(args["output"])/$p` directory"
+			mkdir(args["output"] * "/$p")
+		else
+			@info "Found output directory `$(args["output"] * "/$p")`, skipping creation"
+		end
     end
 
     # Create mappings

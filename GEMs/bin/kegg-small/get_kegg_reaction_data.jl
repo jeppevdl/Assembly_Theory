@@ -101,4 +101,4 @@ end
 
 # Generate link to latest version of database
 linkpath = "data/metadata/kegg_rn.latest.json"
-islink(linkpath) && rm(linkpath); symlink(outpath, linkpath)
+islink(linkpath) && rm(linkpath); symlink(abspath(outpath), abspath(linkpath))
