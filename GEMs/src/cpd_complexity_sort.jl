@@ -1,6 +1,6 @@
 using Pkg
-if basename(pwd()) != "GEMs"
-    cd("C:/Users/jeppe/OneDrive/Documenten/Bioinformatics/Tweede master/Master Thesis/Assembly_Theory/GEMs")
+if basename(pwd()) != "src"
+    cd("C:/Users/jeppe/OneDrive/Documenten/Bioinformatics/Tweede master/Master Thesis/Assembly_Theory/GEMs/src")
 end
 Pkg.activate(".")
 
@@ -43,28 +43,14 @@ compounds = allcpd
 @info "Retrieving mol files for compounds..."
 allmol = Dict{String,Union{Missing,String}}()
 @showprogress for batch in collect(Iterators.partition(compounds, 10))
-	batch_mol = nothing
-	tries = 0
-	while isnothing(batch_mol)
-		try
-			sleep(1)
-			batch_mol = KEGGAPI.kegg_get(String.(batch), "mol", 5) |> r -> split(r[2][1], "\$\$\$\$\n", keepempty=false)
-			map(zip(batch,batch_mol)) do (cpd,mol)
-				allmol[cpd] = mol
-			end
-		catch e
-			@warn e
-			@info "Sleeping for a minute"
-            sleep(60)
-			if tries > 2
-				@error "Failed 2 times to retrieve information, aborting"
-				map(zip(batch,batch_mol)) do (cpd,mol)
-					allmol[cpd] = missing
-				end
-				exit(1)
-			end
-			tries += 1
+	try
+		sleep(0.4)
+		batch_mol = KEGGAPI.kegg_get(String.(batch), "mol", 5) |> r -> split(r[2][1], "\$\$\$\$\n", keepempty=false)
+		map(zip(batch,batch_mol)) do (cpd,mol)
+			allmol[cpd] = mol
 		end
+	catch e
+		@warn e 
 	end
 end
 @info "Found $(length(filter(x -> !ismissing(x), allmol))) out of $(length(allcpd)) compounds with mol files"
@@ -75,17 +61,14 @@ complexities = DataFrame(id=String[], n_atoms=Dict{Symbol,Int}[], hybr=Vector{In
 @showprogress for (cpd, mol) in allmol
     if mol !== missing
 		id = split(cpd, ":")[2]
-        if !isfile("data/molfiles/$id.mol")
-			open("data/molfiles/$id.mol", "w") do f
-				write(f, mol)
-			end
-			open("assembly_go/molfiles/$id.mol", "w") do f
+        if !isfile("C:/Users/jeppe/OneDrive/Documenten/Bioinformatics/Tweede master/Master Thesis/Assembly_Theory/GEMs/data/molfiles/$id.mol")
+			open("C:/Users/jeppe/OneDrive/Documenten/Bioinformatics/Tweede master/Master Thesis/Assembly_Theory/GEMs/data/molfiles/$id.mol", "w") do f
 				write(f, mol)
 			end
 		end
 		try 
-			println(id)
-			graph = MolecularGraph.sdftomol("data/molfiles/$id.mol")
+			# println(id)
+			graph = MolecularGraph.sdftomol("C:/Users/jeppe/OneDrive/Documenten/Bioinformatics/Tweede master/Master Thesis/Assembly_Theory/GEMs/data/molfiles/$id.mol")
 			
 			n_atoms = MolecularGraph.atom_counter(graph)
 			hybr = MolecularGraph.hybridization(graph)
@@ -95,6 +78,7 @@ complexities = DataFrame(id=String[], n_atoms=Dict{Symbol,Int}[], hybr=Vector{In
 
 		catch e
 			@warn e
+			println("Failed to calculate complexity for $id")
 		end
     end
 end
@@ -197,6 +181,6 @@ ma_values = JSON3.read("data/MA_values.json", Dict)
 # end
 # @info "Done calculating MA values"
 
-open("data/complexities_$pathway.json", "w") do io
+open("C:/Users/jeppe/OneDrive/Documenten/Bioinformatics/Tweede master/Master Thesis/Assembly_Theory/GEMs/data/pathway_complexities/complexities_$(pathway)_no_MA.json", "w") do io
 	JSON3.write(io, complexities)
 end

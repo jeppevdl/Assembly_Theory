@@ -1,11 +1,11 @@
 #!/bin/bash
 
 # Define the working directories and JSON files
-MAP="map00010"
+MAP="pathway_no_MA"
 WORK_DIR="$HOME/OneDrive/Documenten/Bioinformatics/Tweede master/Master Thesis/Assembly_Theory/GEMs"
-ASSEMBLY_GO_DIR="$WORK_DIR/assembly_go"
+ASSEMBLY_GO_DIR="$WORK_DIR/bin/assembly_go"
 INPUT_FILE="$WORK_DIR/data/pathway_complexities/complexities_$MAP.json"
-OUTPUT_FILE="$WORK_DIR/data/bash_MA_output/bash_output.json"
+OUTPUT_FILE="$WORK_DIR/data/bash_MA_output/bash_output_$MAP.json"
 TIMEOUT_DURATION=30  # Timeout in seconds
 
 # Ensure jq is installed
@@ -30,10 +30,10 @@ cd "$ASSEMBLY_GO_DIR" || exit 1
 declare -A results
 
 # Loop over each compound ID
-echo "cpd\tma" > output/MA.tsv
+echo "cpd\tma" > "$WORK_DIR/data/bash_MA_output/intermediate_MA_$MAP.tsv"
 for compoundId in $COMPOUND_IDS; do
     echo "Processing compound ID: $compoundId"
-    COMMAND="./assembly.exe molfiles/$compoundId.mol"
+    COMMAND="./assembly molfiles/$compoundId.mol"
     
     # Run the command with a timeout and send SIGINT if it times out
     timeout --foreground -s SIGINT $TIMEOUT_DURATION $COMMAND > "output/output_$compoundId.txt" 2> "output/error_$compoundId.txt"
@@ -43,9 +43,9 @@ for compoundId in $COMPOUND_IDS; do
     result=$(grep -o '[0-9]\+' "output/output_$compoundId.txt" | head -n 1)
     
     if [ -n "$result" ]; then
-        echo -e "$compoundID\t$result" >> output/MA.tsv
+        echo -e "$compoundId\t$result" >> "$WORK_DIR/data/bash_MA_output/intermediate_MA_$MAP.tsv"
     else
-        echo -e "$compoundID\tna" >> output/MA.tsv
+        echo -e "$compoundId\tna" >> "$WORK_DIR/data/bash_MA_output/intermediate_MA_$MAP.tsv"
     fi
     
     # Check for errors
