@@ -1,10 +1,19 @@
 using Pkg
-if basename(pwd()) != "GEMs"
-    cd("GEMs")
+if basename(pwd()) != "src"
+    cd("C:/Users/jeppe/OneDrive/Documenten/Bioinformatics/Tweede master/Master Thesis/Assembly_Theory/GEMs/src")
 end
 Pkg.activate(".")
 
-using JSON3, KEGGAPI, ProgressMeter, DataFrames
+using JSON3, KEGGAPI, ProgressMeter, DataFrames, CSV, Plots, StatsPlots
+
+MAs = CSV.read("../data/bash_MA_output/intermediate_MA_pathway_no_MA.tsv", DataFrame; delim="\t")
+MAs2 = CSV.read("../data/bash_MA_output/intermediate_MA_v2_pathway_no_MA.tsv", DataFrame, delim="\t")
+
+MAs = append!(MAs, MAs2)
+
+#make density plot of the MAs
+density(MAs.ma, xlabel="Molecular assembly", ylabel="Density", title="Density plot of molecular complexities", legend=false, alpha=0.5, lw=2, color=:blue)
+
 
 pathway = "map00010"
 json_data = JSON3.read(open("data/complexities_$pathway.json", "r"))
