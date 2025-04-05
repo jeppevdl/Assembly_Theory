@@ -6,19 +6,17 @@ Pkg.activate(".")
 
 using JSON3, KEGGAPI, ProgressMeter, DataFrames, CSV, Plots, StatsPlots
 
-MAs = CSV.read("../data/bash_MA_output/intermediate_MA_pathway_no_MA.tsv", DataFrame; delim="\t")
-MAs2 = CSV.read("../data/bash_MA_output/intermediate_MA_v2_pathway_no_MA.tsv", DataFrame, delim="\t")
+MAs = CSV.read("../data/bash_MA_output/pathway_MA_values.tsv", DataFrame; delim="\t")
 
-MAs = append!(MAs, MAs2)
+dens = density(MAs.ma, size=(800, 600), xlabel="Molecular Assembly", ylabel="Density", title="Density plot of MA values", legend=false, lw=2, alpha = 0.75, color=:blue, dpi=600)
+savefig(dens, "../data/bash_MA_output/density_plot_MA.png")
 
-#make density plot of the MAs
-density(MAs.ma, xlabel="Molecular assembly", ylabel="Density", title="Density plot of molecular complexities", legend=false, alpha=0.5, lw=2, color=:blue)
-
+hist = histogram(MAs.ma, size=(800, 600), xlabel="Molecular Assembly", ylabel="Frequency", title="Histogram of MA values", legend=false, alpha=0.75, lw=2, color=:blue)
+savefig(hist, "../data/bash_MA_output/histogram_MA.png")
 
 pathway = "map00010"
-json_data = JSON3.read(open("data/complexities_$pathway.json", "r"))
-columns = json_data[:columns] 
-complexities = DataFrame(columns, json_data[:colindex][:names])
+descriptors = CSV.read("C:/Users/jeppe/OneDrive/Documenten/Bioinformatics/Tweede master/Master Thesis/Assembly_Theory/GEMs/data/pathway_complexities/pathway_descriptors.csv", DataFrame; delim=",", header=true)
+
 
 reactions = KEGGAPI.link("rn", pathway).data[2]
 
@@ -37,12 +35,12 @@ for reaction in eachrow(reaction_df)
     println("Equation: $(reaction.equation)")
     println("IN:")
     for cpd in reaction.cpd_in
-        ma = complexities.ma[complexities.id .== cpd]
+        ma = descriptors.ma[descriptors.id .== cpd]
         println("$cpd -> MA:$ma")
     end
     println("OUT:")
     for cpd in reaction.cpd_out
-        ma = complexities.ma[complexities.id .== cpd]
+        ma = descriptors.ma[descriptors.id .== cpd]
         println("$cpd -> MA:$ma")
     end
     println("\n")

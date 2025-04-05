@@ -21,7 +21,7 @@ if [ ! -f "$INPUT_FILE" ]; then
 fi
 
 # Extract compound IDs from JSON
-COMPOUND_IDS=$(jq -r '.columns[0][]' "$INPUT_FILE" | tr -d '\r' | tail -n +4337)
+COMPOUND_IDS=$(jq -r '.columns[0][]' "$INPUT_FILE" | tr -d '\r' | tail -n +5691)
 
 # Change to the assembly directory
 cd "$ASSEMBLY_GO_DIR" || exit 1
@@ -30,7 +30,7 @@ cd "$ASSEMBLY_GO_DIR" || exit 1
 declare -A results
 
 # Loop over each compound ID
-echo "cpd\tma" > "$WORK_DIR/data/bash_MA_output/intermediate_MA_v3_$MAP.tsv"
+echo "cpd\tma" > "$WORK_DIR/data/bash_MA_output/bash_MA_$MAP.tsv"
 for compoundId in $COMPOUND_IDS; do
     echo "Processing compound ID: $compoundId"
     COMMAND="./assembly molfiles/$compoundId.mol"
@@ -43,9 +43,9 @@ for compoundId in $COMPOUND_IDS; do
     result=$(grep -o '[0-9]\+' "output/output_$compoundId.txt" | head -n 1)
     
     if [ -n "$result" ]; then
-        echo -e "$compoundId\t$result" >> "$WORK_DIR/data/bash_MA_output/intermediate_MA_v3_$MAP.tsv"
+        echo -e "$compoundId\t$result" >> "$WORK_DIR/data/bash_MA_output/bash_MA_$MAP.tsv"
     else
-        echo -e "$compoundId\tna" >> "$WORK_DIR/data/bash_MA_output/intermediate_MA_v3_$MAP.tsv"
+        echo -e "$compoundId\tna" >> "$WORK_DIR/data/bash_MA_output/bash_MA_$MAP.tsv"
     fi
     
     # Check for errors
@@ -54,13 +54,3 @@ for compoundId in $COMPOUND_IDS; do
         cat "output/error_$compoundId.txt"
     fi
 done
-
-# Convert results to JSON and save
-printf '{' > "$OUTPUT_FILE"
-for key in "${!results[@]}"; do
-    printf ' "%s": "%s",' "$key" "${results[$key]}" >> "$OUTPUT_FILE"
-done
-sed -i '$ s/,$//' "$OUTPUT_FILE"  # Remove trailing comma
-printf '}' >> "$OUTPUT_FILE"
-
-echo "Processing complete. Results saved to $OUTPUT_FILE."
