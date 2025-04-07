@@ -124,17 +124,3 @@ open("C:/Users/jeppe/OneDrive/Documenten/Bioinformatics/Tweede master/Master The
 		write(f, "$id\n")
 	end
 end
-# cpd_df_hsa
-# cpd_df_eco
-
-# x = cpd_df_hsa.ma
-# y = cpd_df_gga.ma
-
-# x_clean = filter(!isnan, x)
-# y_clean = filter(!isnan, y)
-
-# μ = fit(DiscreteNonParametric, x_clean, ones(length(x_clean)) ./ length(x_clean))
-# ν = fit(DiscreteNonParametric, y_clean, ones(length(y_clean)) ./ length(y_clean))
-
-# d = wasserstein(μ, ν; p=Val(1))
-# println("Wasserstein-1 distance: ", d)
