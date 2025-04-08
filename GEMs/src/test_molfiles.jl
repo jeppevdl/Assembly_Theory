@@ -34,7 +34,7 @@ function check_molfile_entries(directory::String)
 end
 
 # Run the check (replace "." with your directory if needed)
-molfile_dir = "C:\\Users\\jeppe\\OneDrive\\Documenten\\Bioinformatics\\Tweede master\\Master Thesis\\Assembly_Theory\\GEMs\\data\\molfiles"
+molfile_dir = "C:\\Users\\jeppe\\OneDrive\\Documenten\\Bioinformatics\\Tweede master\\Master Thesis\\Assembly_Theory\\GEMs\\bin\\assembly_go\\molfiles"
 check_molfile_entries(molfile_dir)
 
 using KEGGAPI

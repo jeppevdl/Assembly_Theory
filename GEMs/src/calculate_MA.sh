@@ -1,10 +1,10 @@
 #!/bin/bash
 
 # Define the working directories and JSON files
-MAP="missing"
+MAP="retry_pathway"
 WORK_DIR="$HOME/OneDrive/Documenten/Bioinformatics/Tweede master/Master Thesis/Assembly_Theory/GEMs"
 ASSEMBLY_GO_DIR="$WORK_DIR/bin/assembly_go"
-INPUT_FILE="$WORK_DIR/data/pathway_complexities/calc_ma.txt"
+INPUT_FILE="$WORK_DIR/data/bash_MA_output/pathway_ids.txt"
 OUTPUT_FILE="$WORK_DIR/data/bash_MA_output/bash_output_$MAP.json"
 TIMEOUT_DURATION=30  # Timeout in seconds
 
@@ -22,7 +22,8 @@ fi
 
 # Extract compound IDs from JSON
 # COMPOUND_IDS=$(jq -r '.columns[0][]' "$INPUT_FILE" | tr -d '\r')
-COMPOUND_IDS=$(tail -n +145 "$INPUT_FILE" | tr -d '\r' | tr '\n' ' ')
+COMPOUND_IDS=$(tail -n +5551 "$INPUT_FILE" | tr -d '\r' | tr '\n' ' ')
+# COMPOUND_IDS=$(tr -d '\r' < "$INPUT_FILE" | tr '\n' ' ')
 
 # Change to the assembly directory
 cd "$ASSEMBLY_GO_DIR" || exit 1
@@ -31,7 +32,7 @@ cd "$ASSEMBLY_GO_DIR" || exit 1
 declare -A results
 
 # Loop over each compound ID
-echo "cpd\tma" > "$WORK_DIR/data/bash_MA_output/($MAP)_MA_v1.tsv"
+echo "cpd\tma" > "$WORK_DIR/data/bash_MA_output/($MAP)_MA_v5.tsv"
 for compoundId in $COMPOUND_IDS; do
     echo "Processing compound ID: $compoundId"
     COMMAND="./assembly molfiles/$compoundId.mol"
@@ -44,9 +45,9 @@ for compoundId in $COMPOUND_IDS; do
     result=$(grep -o '[0-9]\+' "output/output_$compoundId.txt" | head -n 1)
     
     if [ -n "$result" ]; then
-        echo -e "$compoundId\t$result" >> "$WORK_DIR/data/bash_MA_output/($MAP)_MA_v1.tsv"
+        echo -e "$compoundId\t$result" >> "$WORK_DIR/data/bash_MA_output/($MAP)_MA_v5.tsv"
     else
-        echo -e "$compoundId\tna" >> "$WORK_DIR/data/bash_MA_output/($MAP)_MA_v1.tsv"
+        echo -e "$compoundId\tna" >> "$WORK_DIR/data/bash_MA_output/($MAP)_MA_v5.tsv"
     fi
     
     # Check for errors
