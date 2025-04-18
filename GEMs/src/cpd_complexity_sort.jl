@@ -4,7 +4,7 @@ if basename(pwd()) != "src"
 end
 Pkg.activate(".")
 
-using HTTP, JSON3, KEGGAPI, MolecularGraph, ProgressMeter, DataFrames
+using HTTP, JSON3, KEGGAPI, MolecularGraph, ProgressMeter, DataFrames, CSV
 
 function KEGGAPI.kegg_get(query::Vector{String}, option::String, retries::Int)
 	i = 0
@@ -84,6 +84,32 @@ complexities = DataFrame(id=String[], n_atoms=Dict{Symbol,Int}[], hybr=Vector{In
 end
 @info "Calculated complexity values for $(nrow(complexities)) compounds out of $(length(allmol))"
 
+
+# all_ma = CSV.read("C:/Users/jeppe/OneDrive/Documenten/Bioinformatics/Tweede master/Master Thesis/Assembly_Theory/GEMs/data/bash_MA_output/complete_MAs.csv", DataFrame)
+# complexities = DataFrame(id=String[], n_atoms=Dict{Symbol,Int}[], hybr=Vector{Int}[], n_rings=Vector{Int}[], ma=Vector{Int64}[])
+# @info "Calculating complexity of compounds..."
+# @showprogress for row in eachrow(all_ma)
+# 	cpd = row.cpd
+# 	ma = row.ma
+# 	if ma != "na"
+# 		try
+# 			# println(id)
+# 			graph = MolecularGraph.sdftomol("C:/Users/jeppe/OneDrive/Documenten/Bioinformatics/Tweede master/Master Thesis/Assembly_Theory/GEMs/data/molfiles/$cpd.mol")
+		
+# 			n_atoms = MolecularGraph.atom_counter(graph)
+# 			hybr = MolecularGraph.hybridization(graph)
+# 			n_rings = MolecularGraph.ring_count(graph)
+
+# 			push!(complexities, (cpd, n_atoms, hybr, n_rings, ma), promote=true)
+
+# 		catch e
+# 			@warn e
+# 			println("Failed to calculate complexity for $cpd")
+# 		end
+# 	end
+# end
+# @info "Calculated complexity values for $(nrow(complexities)) compounds out of $(length(all_ma.cpd))"
+
 function count_rings(complexities::DataFrame)
 	unique_rings = unique.(filter.(x -> x > 0, complexities.n_rings))
     return length.(unique_rings)
@@ -120,10 +146,10 @@ complexities.sp2 = count_hybr(complexities)[2]
 complexities.sp3 = count_hybr(complexities)[3]
 
 # Sort by complexity
-sort!(complexities, [:counted_atoms, :sp3, :sp2, :sp, :counted_rings], rev=true)
+sort!(complexities, [:ma, :counted_atoms, :sp3, :sp2, :sp, :counted_rings], rev=true)
 @info "Done sorting compounds based on complexity"
 
-ma_values = JSON3.read("data/MA_values.json", Dict)
+# ma_values = JSON3.read("data/MA_values.json", Dict)
 # code below to read in precalculated complexities
 # json_data = JSON3.read(open("data/pathway_complexities/complexities_$pathway.json", "r"))
 # columns = json_data[:columns] 
@@ -181,6 +207,4 @@ ma_values = JSON3.read("data/MA_values.json", Dict)
 # end
 # @info "Done calculating MA values"
 
-open("C:/Users/jeppe/OneDrive/Documenten/Bioinformatics/Tweede master/Master Thesis/Assembly_Theory/GEMs/data/pathway_complexities/complexities_$(pathway)_no_MA.json", "w") do io
-	JSON3.write(io, complexities)
-end
+CSV.write("C:/Users/jeppe/OneDrive/Documenten/Bioinformatics/Tweede master/Master Thesis/Assembly_Theory/GEMs/data/pathway_complexities/complete_descriptors.csv", complexities; header=true)

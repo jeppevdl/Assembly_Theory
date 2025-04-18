@@ -5,11 +5,11 @@ end
 
 Pkg.activate(".")
 
-using Catalyst, OrdinaryDiffEq, Plots, GraphRecipes, JumpProcesses, DataFrames, Statistics, Base.Threads
+using Catalyst, OrdinaryDiffEq, Plots, GraphRecipes, JumpProcesses, DataFrames, Statistics, Base.Threads, ProgressMeter
 #functions--------------------------------------------------------------------------------
 
 #function to create a reaction network
-function create_reactions(building_blocks, upper_bound, rate; selection_target="", selection_rate=2, upreg_reactions = [])
+function create_reactions(building_blocks, upper_bound, rate; selection_target="", selection_rate=2, upreg_reactions = [], degradation_rate=0.1)
     species = building_blocks
     # create all possible species under upper bound by combining building blocks
     for i in 2:upper_bound 
@@ -31,11 +31,16 @@ function create_reactions(building_blocks, upper_bound, rate; selection_target="
                 comb = replace(string(str1), "(t)" => "") * string(str2) .|> Meta.parse
                 comb = only(@eval @species $(comb))
                 if selection_target != "" && [string(str1), string(str2)] in upreg_reactions
-                    println(string(str1), string(str2))
                     if string(str1) == string(str2) 
                         push!(reactions, Reaction(selection_rate, [str1], [comb], [2], [1]))
                     else
                         push!(reactions, Reaction(selection_rate, [str1, str2], [comb], [1, 1], [1]))
+                    end
+                elseif selection_target != "" && (string(str1) == selection_target*"(t)" || string(str2) == selection_target*"(t)")
+                    if string(str1) == string(str2) 
+                        push!(reactions, Reaction(degradation_rate, [str1], [comb], [2], [1]))
+                    else
+                        push!(reactions, Reaction(degradation_rate, [str1, str2], [comb], [1, 1], [1]))
                     end
                 elseif string(str1) == string(str2) 
                     push!(reactions, Reaction(rate, [str1], [comb], [2], [1]))
@@ -118,18 +123,19 @@ end
 # setting up model
 
 building_blocks = ["A", "B", "N"]
-upper_bound = 6
+upper_bound = 7
 rate = 1
 selection_rate = 100
 
-#set to "" for no selection
-selection_target = "BANANA"
+#set selection_target="" for no selection
+selection_target = ""
 
 upregulated = [["B(t)", "A(t)"], ["N(t)", "A(t)"], ["NA(t)", "NA(t)"], ["BA(t)", "NANA(t)"]]
+degradation_rate = 0.1
 t = default_t()
 
 #creating the reactions can take a long time
-reactions, species = create_reactions(building_blocks, upper_bound, rate; selection_target, selection_rate, upreg_reactions = upregulated)
+reactions, species = create_reactions(building_blocks, upper_bound, rate; selection_target, selection_rate, upreg_reactions = upregulated, degradation_rate)
 @named jumpmodel = ReactionSystem(reactions, t)
 
 u0 = vcat([Symbol(replace(string(sp), "(t)" => "")) => 500 for sp in species[1:length(building_blocks)]], [Symbol(replace(string(sp), "(t)" => "")) => 0 for sp in species[length(building_blocks)+1:end]])
@@ -157,8 +163,8 @@ targets = []
 times = []
 target_values = []
 
-p_a = plot(title = "Assembly Through Time", xlabel = "Time", ylabel = "Assembly", dpi = 600, legend=false, ylims = (0, 80));
-p_t = plot(title = "Target Species Through Time", xlabel = "Time", ylabel = "Target Species", dpi = 600, legend=false, ylims = (0, 400));
+p_a = plot(title = "Assembly Through Time", xlabel = "Time", ylabel = "Assembly", dpi = 600, legend=false, ylims = (0, 40));
+p_t = plot(title = "Target Species Through Time", xlabel = "Time", ylabel = "Target Species", dpi = 600, legend=false, ylims = (0, 120));
 
 @time @threads for _ in 1:num_sims
     
@@ -199,8 +205,8 @@ p_t = plot(title = "Target Species Through Time", xlabel = "Time", ylabel = "Tar
 end
 
 display(p_a)
-# savefig(p_a, "AT_exploration/fig/multiple_runs/simple_example_assembly_50sims.png")
+savefig(p_a, "fig/multiple_runs/NEW_simple_example_assembly_100sims.png")
 average = mean(target_values)
 annotate!(p_t, 0.012, 45, text("Average number of target species formed: $average", 6, :red, :left));
 display(p_t)
-# savefig(p_t, "AT_exploration/fig/multiple_runs/simple_example_target_50sims.png")
+savefig(p_t, "fig/multiple_runs/NEW_simple_example_target_100sims.png")

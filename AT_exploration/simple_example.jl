@@ -1,8 +1,12 @@
+using Pkg
+if basename(pwd()) != "AT_exploration"
+    cd("C:/Users/jeppe/OneDrive/Documenten/Bioinformatics/Tweede master/Master Thesis/Assembly_Theory/AT_exploration")
+end
 using Catalyst, OrdinaryDiffEq, Plots, GraphRecipes, JumpProcesses, DataFrames, Statistics
 #functions--------------------------------------------------------------------------------
 
 #function to create a reaction network
-function create_reactions(building_blocks, upper_bound, rate; selection_target="", selection_rate=2, upreg_reactions = [])
+function create_reactions(building_blocks, upper_bound, rate; selection_target="", selection_rate=2, upreg_reactions = [], degradation_rate=0.1)
     species = building_blocks
     # create all possible species under upper bound by combining building blocks
     for i in 2:upper_bound 
@@ -24,11 +28,16 @@ function create_reactions(building_blocks, upper_bound, rate; selection_target="
                 comb = replace(string(str1), "(t)" => "") * string(str2) .|> Meta.parse
                 comb = only(@eval @species $(comb))
                 if selection_target != "" && [string(str1), string(str2)] in upreg_reactions
-                    println(string(str1), string(str2))
                     if string(str1) == string(str2) 
                         push!(reactions, Reaction(selection_rate, [str1], [comb], [2], [1]))
                     else
                         push!(reactions, Reaction(selection_rate, [str1, str2], [comb], [1, 1], [1]))
+                    end
+                elseif selection_target != "" && (string(str1) == selection_target*"(t)" || string(str2) == selection_target*"(t)")
+                    if string(str1) == string(str2) 
+                        push!(reactions, Reaction(degradation_rate, [str1], [comb], [2], [1]))
+                    else
+                        push!(reactions, Reaction(degradation_rate, [str1, str2], [comb], [1, 1], [1]))
                     end
                 elseif string(str1) == string(str2) 
                     push!(reactions, Reaction(rate, [str1], [comb], [2], [1]))
@@ -85,19 +94,20 @@ end
 # setting up model
 
 building_blocks = ["A", "B", "N"]
-upper_bound = 6
+upper_bound = 7
 rate = 1
-selection_rate = 10
-selection_target = "BANANA"
+selection_rate = 100
+degradation_rate = 0.1
+selection_target = ""
 upregulated = [["B(t)", "A(t)"], ["N(t)", "A(t)"], ["NA(t)", "NA(t)"], ["BA(t)", "NANA(t)"]]
 t = default_t()
 
 #creating the reactions can take a long time
-reactions, species = create_reactions(building_blocks, upper_bound, rate; selection_target, selection_rate, upreg_reactions = upregulated)
+reactions, species = create_reactions(building_blocks, upper_bound, rate; selection_target, selection_rate, upreg_reactions = upregulated, degradation_rate)
 @named jumpmodel = ReactionSystem(reactions, t)
 
-u0 = vcat([Symbol(replace(string(sp), "(t)" => "")) => 5000 for sp in species[1:length(building_blocks)]], [Symbol(replace(string(sp), "(t)" => "")) => 0 for sp in species[length(building_blocks)+1:end]])
-tspan = (0.0, 0.002)
+u0 = vcat([Symbol(replace(string(sp), "(t)" => "")) => 500 for sp in species[1:length(building_blocks)]], [Symbol(replace(string(sp), "(t)" => "")) => 0 for sp in species[length(building_blocks)+1:end]])
+tspan = (0.0, 0.02)
 ps = []
 
 prob = DiscreteProblem(complete(jumpmodel), u0, tspan, ps)
@@ -127,7 +137,7 @@ for (i, len) in enumerate(unique(sol_lengths))
 end
 
 display(p)
-# savefig(p, "AT_exploration/fig/simple_example_length_selection.png")
+savefig(p, "fig/simple_example_length.png")
 
 #Plot by assembly index
 p_ai = plot(title = "Sum of Variables by Assembly Index", xlabel = "Time", ylabel = "Sum", dpi = 600);
@@ -142,7 +152,7 @@ for (i, ai) in enumerate(unique(sol_ai))
 end
 
 display(p_ai)
-# savefig(p_ai, "AT_exploration/fig/simple_example_ai_selection.png")
+savefig(p_ai, "fig/simple_example_ai.png")
 
 #Plot assembly through time
 assembly_vec= []

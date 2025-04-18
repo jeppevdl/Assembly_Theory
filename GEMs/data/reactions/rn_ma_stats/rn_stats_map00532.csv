@@ -1,0 +1,2 @@
+first,second
+rn:R04104,"Dict{String, Any}(""MA_IN"" => Any[17], ""MAIN_PAIRS"" => Any[""RC01080:C00401_C01490""], ""ENZYME"" => 5, ""MA_OUT"" => Any[15], ""OUT"" => [""C01490""], ""IN"" => [""C00401""], ""MEAN_MA"" => 16.0, ""DIFF"" => -2, ""EQUATION"" => ""C00401 <=> C01490"", ""RCLASS"" => Any[""RC01080""])"
