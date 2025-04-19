@@ -1,4 +1,5 @@
 using Pkg
+
 # cd("C:/Users/jeppe/OneDrive/Documenten/Bioinformatics/Tweede master/Master Thesis/Assembly_Theory/AT_exploration/")
 # Pkg.activate(".")
 # using Catalyst, ModelingToolkit, DifferentialEquations
@@ -51,10 +52,8 @@ missingma = []
 pathway_metadata = CSV.read("../data/reactions/pathway_metadata.csv", DataFrame)
 pathway_list = pathway_metadata.id
 
-mean_diff_dict = Dict{String, Float64}()
-mean_ma_dict = Dict{String, Float64}()
-median_diff_dict = Dict{String, Float64}()
-median_ma_dict = Dict{String, Float64}()
+stats_dict = Dict{String, Dict{String, Any}}()
+unique_cpd_dict = Dict{String, Dict{String, Int}}()
 
 all_ma_values = Float64[]
 all_ma_groups = String[]
@@ -62,15 +61,8 @@ all_ma_groups = String[]
 all_diff_values = Float64[]
 all_diff_groups = String[]
 
-rclass_coverage_dict = Dict{String, Float64}()
-reaction_counts = Dict{String, Int}()
-rclass_counts = Dict{String, Int}()
-
 for pathway in pathway_list
     @info "Processing pathway $pathway"
-    
-    num_reactions = 0
-    num_with_rclass = 0
 
     if isfile("../data/reactions/rn_data/kegg_rn_$pathway.json")
         rn_data = open("../data/reactions/rn_data/kegg_rn_$pathway.json", "r") do io
@@ -148,10 +140,16 @@ for pathway in pathway_list
     end
 
     rn_ma = Dict{String, Dict{String, Any}}()
+    
+    num_reactions = 0
+    num_with_rclass = 0
 
     no_ma = []
     all_in = []
     all_out = []
+
+    unique_cpds = Dict{String, Int}()
+    stats = Dict{String, Any}()
 
     # rxs = []
     # t = default_t()
@@ -165,7 +163,6 @@ for pathway in pathway_list
             num_with_rclass += 1
         end
 
-        
         if haskey(data, "ENZYME")
             ec = data["ENZYME"][1][1] |> x -> parse(Int, string(x))
         else
@@ -206,7 +203,6 @@ for pathway in pathway_list
 
         # push!(rxs, Reaction(5.0, species_in, species_out, input_coeffs, output_coeffs))
 
-        
         ma_in = []
         ma_out = []
 
@@ -218,6 +214,9 @@ for pathway in pathway_list
                 if cpd_in in MAs.cpd
                     if MAs.ma[MAs.cpd .== cpd_in][1] != "na"
                         push!(ma_in, MAs.ma[MAs.cpd .== cpd_in][1] |> x -> parse(Int, string(x)))
+                        if !haskey(unique_cpds, cpd_in)
+                            unique_cpds[cpd_in] = MAs.ma[MAs.cpd .== cpd_in][1] |> x -> parse(Int, string(x))
+                        end
                     else
                         push!(ma_in, NaN)
                         println("Missing MA for $cpd_in in $entry")
@@ -236,6 +235,9 @@ for pathway in pathway_list
                 if cpd_out in MAs.cpd
                     if MAs.ma[MAs.cpd .== cpd_out][1] != "na"
                         push!(ma_out, MAs.ma[MAs.cpd .== cpd_out][1] |> x -> parse(Int, string(x)))
+                        if !haskey(unique_cpds, cpd_out)
+                            unique_cpds[cpd_out] = MAs.ma[MAs.cpd .== cpd_out][1] |> x -> parse(Int, string(x))
+                        end
                     else
                         push!(ma_out, NaN)
                         println("Missing MA for $cpd_out in $entry")
@@ -266,71 +268,80 @@ for pathway in pathway_list
     
     push!(missingma, no_ma)
 
-    reaction_counts[pathway] = num_reactions
-    rclass_counts[pathway] = num_with_rclass
-    rclass_coverage_dict[pathway] = num_with_rclass / num_reactions
+    unique_cpd_dict[pathway] = unique_cpds
+
+    stats["num_reactions"] = num_reactions
+    stats["num_with_rclass"] = num_with_rclass
+    stats["rclass_coverage"] = num_with_rclass / num_reactions
+
+    stats["origin"] = pathway_metadata.origin[pathway_metadata.id .== pathway][1]
+    stats["super_pathway"] = pathway_metadata.super_pathway[pathway_metadata.id .== pathway][1]
 
     if length(rn_ma) != 0 && !(pathway in ["map00510", "map00532", "map00563"])
         mean_diff = mean([value["DIFF"] for value in values(rn_ma) if !isnan(value["DIFF"])])
-        mean_ma = mean([value["MEAN_MA"] for value in values(rn_ma) if !isnan(value["MEAN_MA"])])
-        mean_diff_dict[pathway] = mean_diff
-        mean_ma_dict[pathway] = mean_ma
+        stats["mean_diff"] = mean_diff
+
+        mean_ma = mean(collect(values(unique_cpds)))
+        stats["mean_ma"] = mean_ma
 
         median_diff = median([value["DIFF"] for value in values(rn_ma) if !isnan(value["DIFF"])])
-        median_ma = median(vcat([[value["MA_IN"]; value["MA_OUT"]] for value in values(rn_ma) if !any(isnan, value["MA_IN"]) && !any(isnan, value["MA_OUT"])]...))
-        median_diff_dict[pathway] = median_diff
-        median_ma_dict[pathway] = median_ma
+        stats["median_diff"] = median_diff
+
+        median_ma = median(collect(values(unique_cpds)))
+        stats["median_ma"] = median_ma
+
+        min_diff = minimum([value["DIFF"] for value in values(rn_ma) if !isnan(value["DIFF"])])
+        stats["min_diff"] = min_diff
+
+        min_ma = minimum(collect(values(unique_cpds)))
+        stats["min_ma"] = min_ma
+
+        max_diff = maximum([value["DIFF"] for value in values(rn_ma) if !isnan(value["DIFF"])])
+        stats["max_diff"] = max_diff
+
+        max_ma = maximum(collect(values(unique_cpds)))
+        stats["max_ma"] = max_ma
+
+        q1_diff = quantile([value["DIFF"] for value in values(rn_ma) if !isnan(value["DIFF"])], 0.25)
+        stats["q1_diff"] = q1_diff
+
+        q1_ma = quantile(collect(values(unique_cpds)), 0.25)
+        stats["q1_ma"] = q1_ma
+
+        q3_diff = quantile([value["DIFF"] for value in values(rn_ma) if !isnan(value["DIFF"])], 0.75)
+        stats["q3_diff"] = q3_diff
+
+        q3_ma = quantile(collect(values(unique_cpds)), 0.75)
+        stats["q3_ma"] = q3_ma
 
         h1 = histogram([value["DIFF"] for value in values(rn_ma) if !isnan(value["DIFF"])], dpi = 600, size = (800,600), legend=false, xlabel = "MA difference between input and output", ylabel = "Frequency", title = "Distribution of MA difference between input and output for $pathway", alpha = 0.75, color = :blue);
         savefig(h1, "../figures/pathway_diff_dist/$(pathway)_diff.png")
-        h2 = histogram(vcat([[value["MA_IN"]; value["MA_OUT"]] for value in values(rn_ma) if !any(isnan, value["MA_IN"]) && !any(isnan, value["MA_OUT"])]...), dpi = 600, size = (800,600), legend=false, xlabel = "MA value", ylabel = "Frequency", title = "Distribution of MA values for $pathway", alpha = 0.75, color = :red)
+        h2 = histogram(collect(values(unique_cpds)), dpi = 600, size = (800,600), legend=false, xlabel = "MA value", ylabel = "Frequency", title = "Distribution of MA values for $pathway", alpha = 0.75, color = :red)
         savefig(h2, "../figures/pathway_ma_dist/$(pathway)_ma.png")
         
-
-        # REMOVE DUPLICATES!
-        ma_bp_data = vcat([[value["MA_IN"]; value["MA_OUT"]] for value in values(rn_ma)
-            if !any(isnan, value["MA_IN"]) && !any(isnan, value["MA_OUT"])]...)
+        ma_bp_data = collect(values(unique_cpds))
         diff_bp_data = [abs(value["DIFF"]) for value in values(rn_ma) if !isnan(value["DIFF"])]
 
-        group_label = pathway_metadata.super_pathway[pathway_metadata.id .== pathway][1]
+        group_label = pathway_metadata.origin[pathway_metadata.id .== pathway][1]
 
         append!(all_ma_values, ma_bp_data)
         append!(all_ma_groups, fill(group_label, length(ma_bp_data)))
 
         append!(all_diff_values, diff_bp_data)
         append!(all_diff_groups, fill(group_label, length(diff_bp_data)))
-
-        # boxplot!(ma_bp, vcat([[value["MA_IN"]; value["MA_OUT"]] for value in values(rn_ma) if !any(isnan, value["MA_IN"]) && !any(isnan, value["MA_OUT"])]...));
-        # boxplot!(diff_bp, [value["DIFF"] for value in values(rn_ma) if !isnan(value["DIFF"])]);
-
     end
+    stats_dict[pathway] = stats
 end
 
-pathways_sorted = sort(collect(keys(mean_diff_dict)))
-
-#add Q1, Q3, min, max
-summary_df = DataFrame(
-    pathway = pathways_sorted,
-    mean_diff = [mean_diff_dict[p] for p in pathways_sorted],
-    mean_ma = [mean_ma_dict[p] for p in pathways_sorted],
-    median_diff = [median_diff_dict[p] for p in pathways_sorted],
-    median_ma = [median_ma_dict[p] for p in pathways_sorted],
-    num_rxns = [reaction_counts[p] for p in pathways_sorted],
-    num_with_rclass = [rclass_counts[p] for p in pathways_sorted],
-    rclass_coverage = [rclass_coverage_dict[p] for p in pathways_sorted],
-    origin = [pathway_metadata.origin[pathway_metadata.id .== p][1] for p in pathways_sorted],
-    super_pathway = [pathway_metadata.super_pathway[pathway_metadata.id .== p][1] for p in pathways_sorted]
-)
-
-CSV.write("../data/reactions/pathways_summary.csv", summary_df)
-
-ma_bp = boxplot(all_ma_groups, all_ma_values; dpi = 600, size = (800,800),xlabel = "Super pathway", ylabel = "MA value", 
+ma_bp = boxplot(all_ma_groups, all_ma_values; dpi = 600, size = (800,800),xlabel = "Pathway lineage of origin", ylabel = "MA value", 
     title = "Distribution of MA values for all pathways", alpha = 0.75, legend = false, xticks = :auto, xrotation = 45)
-savefig(ma_bp, "../figures/pathway_ma_dist/boxplot_ma_grouped_super_pathway.png")
+savefig(ma_bp, "../figures/pathway_ma_dist/boxplot_ma_grouped.png")
 
-diff_bp = boxplot(all_diff_groups, all_diff_values; dpi = 600, size = (800,800), xlabel = "Super pathway", ylabel = "MA difference",
+diff_bp = boxplot(all_diff_groups, all_diff_values; dpi = 600, size = (800,800), xlabel = "Pathway lineage of origin", ylabel = "MA difference",
     title = "Distribution of MA differences for all pathways", alpha = 0.75, legend = false, xticks = :auto, xrotation = 45)
-savefig(diff_bp, "../figures/pathway_diff_dist/boxplot_diff_grouped_super_pathway.png")
+savefig(diff_bp, "../figures/pathway_diff_dist/boxplot_diff_grouped.png")
+
+CSV.write("../data/reactions/pathway_stats.csv", stats_dict)
 
 allmissing = []
 for element in missingma
@@ -344,7 +355,7 @@ for element in missingma
         end
     end
 end
-
+println(allmissing)
 
 # group rn_ma by "ENZYME"
 # rn_ma_grouped = Dict{String, Vector{Dict{String, Any}}}()
