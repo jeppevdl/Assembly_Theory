@@ -9,8 +9,9 @@ if basename(pwd()) != "src"
 end
 Pkg.activate(".")
 
-using JSON3, KEGGAPI, ProgressMeter, DataFrames, CSV, Plots, StatsPlots, Statistics
+using JSON3, KEGGAPI, ProgressMeter, DataFrames, CSV, Plots, StatsPlots, Statistics, CairoMakie
 
+# function for gathering KEGG information
 function KEGGAPI.kegg_get(query::Vector{String}, option::String, retries::Int)
 	i = 0
 	while i < retries
@@ -27,6 +28,7 @@ function KEGGAPI.kegg_get(query::Vector{String}, option::String, retries::Int)
 	end
 end
 
+# function for parsing one side of a reaction equation
 function parse_side_vec(eqs::String)
     parts = split(eqs, r"\+")
     compounds = String[]
@@ -44,16 +46,33 @@ function parse_side_vec(eqs::String)
     return compounds, coefficients
 end
 
+# function for calculating IQR of a vector
+function iqr(v)
+    q25 = quantile(v, 0.25)
+    q75 = quantile(v, 0.75)
+    return q75 - q25
+end
+
+# read in all calculated MA values
 MAs = CSV.read("../data/bash_MA_output/complete_MAs.csv", DataFrame;)
+
+# read in all reaction classes with their respective main compound pairs
 rc2cpd_pairs = JSON3.read("../data/reactions/rc_cpd_pairs.json", Dict{String, Vector{String}})
 
-missingma = []
-
+# read in pathway metadata
 pathway_metadata = CSV.read("../data/reactions/pathway_metadata.csv", DataFrame)
 pathway_list = pathway_metadata.id
+skipped_pathways = ["map00510", "map00532", "map00563", "map00530", "map00190","map00271",
+"map00272","map00031","map00150","map01030","map01031","map01032","map00533","map00602","map00601",
+"map00534", "map00603", "map00531", "map00512", "map00604"]
 
+# keep track of missing MA values
+missingma = []
+
+# dictionaries for storing stats, unique compounds and reaction class information
 stats_dict = Dict{String, Dict{String, Any}}()
 unique_cpd_dict = Dict{String, Dict{String, Int}}()
+rclass_dict = Dict{String, Dict{String, Dict{String, Any}}}()
 
 all_ma_values = Float64[]
 all_ma_groups = String[]
@@ -63,13 +82,17 @@ all_diff_groups = String[]
 
 for pathway in pathway_list
     @info "Processing pathway $pathway"
+    if pathway in skipped_pathways
+        @info "Skipping pathway $pathway"
+        continue
+    end
 
     if isfile("../data/reactions/rn_data/kegg_rn_$pathway.json")
         rn_data = open("../data/reactions/rn_data/kegg_rn_$pathway.json", "r") do io
             JSON3.read(io, Dict{String, Dict{String, Vector{String}}})
         end
     else
-        pathway_reactions = KEGGAPI.link("rn", pathway).data[2]
+        pathway_reactions = KEGGAPI.link("rn", String(pathway)).data[2]
 
         rn_data = Dict{String, Dict{String, Vector{String}}}()
 
@@ -139,6 +162,7 @@ for pathway in pathway_list
         end
     end
 
+    # preallocate dictionary for reaction data linked with MA values
     rn_ma = Dict{String, Dict{String, Any}}()
     
     num_reactions = 0
@@ -148,48 +172,32 @@ for pathway in pathway_list
     all_in = []
     all_out = []
 
+    # keep track of unique compounds and stats for each pathway
     unique_cpds = Dict{String, Int}()
     stats = Dict{String, Any}()
 
     # rxs = []
     # t = default_t()
 
+    # go over reactions in pathway
     for entry in keys(rn_data)
-        # println("Processing $entry")
+
         data = rn_data[entry]
 
+        # check if reaction has a class
         num_reactions += 1
         if haskey(data, "RCLASS") && !isempty(data["RCLASS"])
             num_with_rclass += 1
         end
 
+        # check if reaction has an enzyme
         if haskey(data, "ENZYME")
             ec = data["ENZYME"][1][1] |> x -> parse(Int, string(x))
         else
             ec = NaN
         end
 
-        main_reaction_pairs = []
-        reaction_classes = []
-        if haskey(data, "RCLASS")
-            classes = data["RCLASS"]
-            for class in classes
-                elements = split(class, "  ")
-                cl = elements[1]
-                push!(reaction_classes, cl)
-                pairs = elements[2:end]
-                main_pairs = rc2cpd_pairs[cl]
-                for pair in pairs
-                    if pair in main_pairs
-                        push!(main_reaction_pairs, cl*":"*pair)
-                    end
-                end
-            end
-        else
-            println("No RCLASS for $entry")
-            continue
-        end
-
+        # parse the reaction equation
         equation = data["EQUATION"][1]
         lhs, rhs = split(equation, "<=>")
         ins, _ = parse_side_vec(String(lhs))
@@ -203,12 +211,63 @@ for pathway in pathway_list
 
         # push!(rxs, Reaction(5.0, species_in, species_out, input_coeffs, output_coeffs))
 
-        ma_in = []
-        ma_out = []
+        main_reaction_pairs = []
+        reaction_classes = []
+
+        # go over reaction classes present in the pathway and calculate statistics
+        if haskey(data, "RCLASS")
+            classes = data["RCLASS"]
+            for class in classes
+                elements = split(class, "  ")
+                cl = elements[1]
+                push!(reaction_classes, cl)
+                pairs = elements[2:end]
+                main_pairs = rc2cpd_pairs[cl]
+                for pair in pairs
+                    if pair in main_pairs # only consider main reaction pairs
+                        push!(main_reaction_pairs, cl*":"*pair)
+                        if haskey(rclass_dict, cl)
+                            if !haskey(rclass_dict[cl], pair)
+                                p1 = split(pair, "_")[1]
+                                p2 = split(pair, "_")[2]
+                                if (p1 in ins && p2 in outs) || (p1 in outs && p2 in ins)
+                                    if MAs.ma[MAs.cpd .== p1][1] != "na" && MAs.ma[MAs.cpd .== p2][1] != "na"
+                                        ma1 = MAs.ma[MAs.cpd .== p1][1] |> x -> parse(Int, string(x))
+                                        ma2 = MAs.ma[MAs.cpd .== p2][1] |> x -> parse(Int, string(x))
+                                        mean_ma_pair = mean([ma1, ma2])
+                                        diff_ma_pair = abs(ma1 - ma2)
+                                        rclass_dict[cl][pair] = Dict("MA" => [ma1, ma2], "MEAN_MA" => mean_ma_pair, "DIFF" => diff_ma_pair, "ENZYME" => ec)
+                                    end
+                                end
+                            end
+                        else
+                            p1 = split(pair, "_")[1]
+                            p2 = split(pair, "_")[2]
+                            if (p1 in ins && p2 in outs) || (p1 in outs && p2 in ins)
+                                if MAs.ma[MAs.cpd .== p1][1] != "na" && MAs.ma[MAs.cpd .== p2][1] != "na"
+                                    ma1 = MAs.ma[MAs.cpd .== p1][1] |> x -> parse(Int, string(x))
+                                    ma2 = MAs.ma[MAs.cpd .== p2][1] |> x -> parse(Int, string(x))
+                                    mean_ma_pair = mean([ma1, ma2])
+                                    diff_ma_pair = abs(ma1 - ma2)
+                                    rclass_dict[cl] = Dict(pair => Dict("MA" => [ma1, ma2], "MEAN_MA" => mean_ma_pair, "DIFF" => diff_ma_pair, "ENZYME" => ec))
+                                end
+                            end
+                        end
+                    end
+                end
+            end
+        else
+            println("No RCLASS for $entry")
+            continue
+        end
 
         main_pairs = [string(split(elem, ":")[2]) for elem in main_reaction_pairs]
         main_cpds = unique(vcat([split(elem, "_") for elem in main_pairs]...))
         
+        ma_in = []
+        ma_out = []
+
+        # gather MA values for input and output compounds and add to unique compounds dictionary
         for cpd_in in ins 
             if cpd_in in main_cpds
                 if cpd_in in MAs.cpd
@@ -251,6 +310,7 @@ for pathway in pathway_list
             end
         end
         
+        # calculate MA difference and mean MA
         if any(isnan, ma_in) || any(isnan, ma_out)
             diff = NaN
             mean_ma = NaN
@@ -262,8 +322,10 @@ for pathway in pathway_list
         all_in = vcat(all_in, ins)
         all_out = vcat(all_out, outs)
         
+        # store reaction data in rn_ma dictionary
         rn_ma[entry] = Dict("ENZYME" => ec, "EQUATION" => equation, "IN" => ins, "OUT" => outs, 
-        "MA_IN" => ma_in, "MA_OUT" => ma_out, "DIFF" => diff, "MEAN_MA" => mean_ma, "MAIN_PAIRS" => main_reaction_pairs, "RCLASS" => reaction_classes)
+        "MA_IN" => ma_in, "MA_OUT" => ma_out, "DIFF" => diff, "MEAN_MA" => mean_ma, 
+        "MAIN_PAIRS" => main_reaction_pairs, "RCLASS" => reaction_classes)
     end
     
     push!(missingma, no_ma)
@@ -277,12 +339,20 @@ for pathway in pathway_list
     stats["origin"] = pathway_metadata.origin[pathway_metadata.id .== pathway][1]
     stats["super_pathway"] = pathway_metadata.super_pathway[pathway_metadata.id .== pathway][1]
 
-    if length(rn_ma) != 0 && !(pathway in ["map00510", "map00532", "map00563"])
+    # calculate statistics for the pathway, make histograms and boxplot data based on grouping
+    if length(rn_ma) != 0 && !(pathway in skipped_pathways) # skip certain pathways
         mean_diff = mean([value["DIFF"] for value in values(rn_ma) if !isnan(value["DIFF"])])
         stats["mean_diff"] = mean_diff
 
+        # NO duplicates are used for MA stats
         mean_ma = mean(collect(values(unique_cpds)))
         stats["mean_ma"] = mean_ma
+
+        sdev_diff = std([value["DIFF"] for value in values(rn_ma) if !isnan(value["DIFF"])])
+        stats["sdev_diff"] = sdev_diff
+
+        sdev_ma = std(collect(values(unique_cpds)))
+        stats["sdev_ma"] = sdev_ma
 
         median_diff = median([value["DIFF"] for value in values(rn_ma) if !isnan(value["DIFF"])])
         stats["median_diff"] = median_diff
@@ -333,15 +403,112 @@ for pathway in pathway_list
     stats_dict[pathway] = stats
 end
 
-ma_bp = boxplot(all_ma_groups, all_ma_values; dpi = 600, size = (800,800),xlabel = "Pathway lineage of origin", ylabel = "MA value", 
+# save stats to CSV
+CSV.write("../data/reactions/pathway_stats.csv", stats_dict)
+CSV.write("../data/reactions/pathway_cpd_stats.csv", unique_cpd_dict)
+
+# Create boxplots for all pathways
+ma_bp = Plots.boxplot(all_ma_groups, all_ma_values; dpi = 600, size = (800,800),xlabel = "Pathway lineage of origin", ylabel = "MA value", 
     title = "Distribution of MA values for all pathways", alpha = 0.75, legend = false, xticks = :auto, xrotation = 45)
 savefig(ma_bp, "../figures/pathway_ma_dist/boxplot_ma_grouped.png")
 
-diff_bp = boxplot(all_diff_groups, all_diff_values; dpi = 600, size = (800,800), xlabel = "Pathway lineage of origin", ylabel = "MA difference",
+diff_bp = Plots.boxplot(all_diff_groups, all_diff_values; dpi = 600, size = (800,800), xlabel = "Pathway lineage of origin", ylabel = "MA difference",
     title = "Distribution of MA differences for all pathways", alpha = 0.75, legend = false, xticks = :auto, xrotation = 45)
 savefig(diff_bp, "../figures/pathway_diff_dist/boxplot_diff_grouped.png")
 
-CSV.write("../data/reactions/pathway_stats.csv", stats_dict)
+# Create bubble chart for reaction classes
+function count_unique_ec_classes(pairs)
+    ec_classes = Int[]
+    for pairinfo in values(pairs)
+        if haskey(pairinfo, "ENZYME")
+            enz = pairinfo["ENZYME"]
+            if !(ismissing(enz) || isnan(enz))
+                push!(ec_classes, Int(enz))  # assume EC class already as int
+            end
+        end
+    end
+    return length(unique(ec_classes))
+end
+
+# Collect data
+x_vals = Int[]
+y_vals = Float64[]
+sizes = Float64[]
+colors = Int[]
+labels = String[]
+
+for (rclass, pairs) in rclass_dict
+    diffs = [abs(pairinfo["DIFF"]) for pairinfo in values(pairs)]
+    push!(x_vals, length(diffs))
+    push!(y_vals, median(diffs))
+    push!(sizes, iqr(diffs))
+    push!(colors, count_unique_ec_classes(pairs))
+    push!(labels, rclass)
+end
+
+# Scale sizes for visibility
+scaled_sizes = 10 .+ 2 .* sizes
+
+# Create plot
+f = Figure(size = (900, 650));
+ax = Axis(f[1, 1],
+    xlabel = "log10(Number of compound pairs)",
+    ylabel = "Median abs(MA difference)",
+    title = "Reaction Class Bubble Chart"
+)
+
+# Color map
+CairoMakie.scatter!(
+    ax, log10.(x_vals), y_vals;
+    markersize = scaled_sizes,
+    color = colors,
+    colormap = :Spectral_5,
+    colorrange = (minimum(colors), maximum(colors)),
+    transparency = true
+)
+
+Colorbar(f[1, 2], limits = (minimum(colors), maximum(colors)), colormap = :Spectral_5, label = "Unique EC classes")
+
+for (i, label) in enumerate(labels)
+    if scaled_sizes[i] > 40 || x_vals[i] > 30
+        text!(ax, log10(x_vals[i]), y_vals[i];
+              text = label,
+              align = (:center, :bottom),
+              fontsize = 10,
+              color = :black)
+    end
+end
+
+f
+
+save("../figures/reaction_class_bubble_chart.png", f)
+
+# rclass_dict_sorted = sort(collect(rclass_dict), by = x -> length(x[2]), rev = true)
+
+# rclass_ma_plot_data = Dict{String, Vector{Float64}}()
+# rc_bp_ma = plot(legend = false, dpi = 600, size = (800,800), xlabel = "RCLASS", ylabel = "MA value", title = "Distribution of MA values for all RCLASSes", alpha = 0.75);
+# rclass_diff_plot_data = Dict{String, Vector{Int}}()
+# rc_bp_diff = plot(legend = false, dpi = 600, size = (800,800), xlabel = "RCLASS", ylabel = "MA difference", title = "Distribution of MA differences for all RCLASSes", alpha = 0.75);
+# for i in 1:10
+#     entry = rclass_dict_sorted[i]
+#     class = entry[1]
+#     data = rclass_dict[class]
+#     for pair in keys(data)
+#         ma_vals = data[pair]["MA"]
+#         diff_val = data[pair]["DIFF"]
+#         if haskey(rclass_ma_plot_data, class)
+#             append!(rclass_ma_plot_data[class], ma_vals)
+#             append!(rclass_diff_plot_data[class], diff_val)
+#         else
+#             rclass_ma_plot_data[class] = ma_vals
+#             rclass_diff_plot_data[class] = [diff_val]
+#         end
+#     end
+#     boxplot!(rc_bp_ma, rclass_ma_plot_data[class])
+#     boxplot!(rc_bp_diff, rclass_diff_plot_data[class])
+# end
+# rc_bp_ma
+# rc_bp_diff
 
 allmissing = []
 for element in missingma
