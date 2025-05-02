@@ -5,7 +5,7 @@ end
 Pkg.activate(".")
 
 using CSV, DataFrames, ProgressMeter, JSON3, KEGGAPI, StatsPlots, 
-ExactOptimalTransport, Distributions, StatsBase, NeighborJoining, Phylo, Plots, MultivariateStats
+ExactOptimalTransport, Distributions, StatsBase, NeighborJoining, Phylo, MultivariateStats, CairoMakie
 
 function read_lines(file_path::String)
     open(file_path) do file
@@ -32,10 +32,17 @@ all_MAs = CSV.read("C:/Users/jeppe/OneDrive/Documenten/Bioinformatics/Tweede mas
 all_MAs = all_MAs[all_MAs.ma .!= "na", :]
 all_MAs.ma = parse.(Int64, all_MAs.ma)
 
-histogram(all_MAs.ma, dpi = 600, bins=75, title="MA values for all gathered compounds", xlabel="MA value", ylabel="Frequency", legend=false)
-# savefig("C:/Users/jeppe/OneDrive/Documenten/Bioinformatics/Tweede master/Master Thesis/Assembly_Theory/GEMs/figures/all_MA_hist/all_MA_histogram.png")
-density(all_MAs.ma, dpi = 600, title="MA values for all gathered compounds", xlabel="MA value", ylabel="Density", legend=false)
-# savefig("C:/Users/jeppe/OneDrive/Documenten/Bioinformatics/Tweede master/Master Thesis/Assembly_Theory/GEMs/figures/all_MA_hist/all_MA_density.png")
+allhist = Figure();
+allhist[1,1] = Axis(allhist, title="MA values for all gathered compounds", xlabel="MA value", ylabel="Frequency")
+hist!(allhist[1,1], all_MAs.ma, bins=75, color = :lightseagreen)
+allhist;
+CairoMakie.save("C:/Users/jeppe/OneDrive/Documenten/Bioinformatics/Tweede master/Master Thesis/Assembly_Theory/GEMs/figures/all_MA_hist/all_MA_histogram_makie.png", allhist, px_per_unit=5)
+
+alldens = Figure();
+alldens[1,1] = Axis(alldens, title="MA values for all gathered compounds", xlabel="MA value", ylabel="Density")
+CairoMakie.density!(alldens[1,1], all_MAs.ma, color = (:lightseagreen, 0.5), strokewidth=2, strokecolor = :lightseagreen)
+alldens;
+CairoMakie.save("C:/Users/jeppe/OneDrive/Documenten/Bioinformatics/Tweede master/Master Thesis/Assembly_Theory/GEMs/figures/all_MA_hist/all_MA_density_makie.png", alldens, px_per_unit=5)
 
 second_peak = all_MAs[(all_MAs.ma .>= 35 .&& all_MAs.ma .<= 50), :]
 br_dict = Dict{String, Int}()
@@ -63,6 +70,7 @@ sorted_br_dict = sort(collect(br_dict), by=x->x[2], rev=true)
 organisms = read_lines("C:/Users/jeppe/OneDrive/Documenten/Bioinformatics/Tweede master/Master Thesis/Assembly_Theory/GEMs/bin/kegg-small/data/kegg-small.lst")
 organism_df = CSV.read("C:/Users/jeppe/OneDrive/Documenten/Bioinformatics/Tweede master/Master Thesis/Assembly_Theory/GEMs/bin/kegg-small/data/kegg-small.tsv", DataFrame; header=true)
 
+missing_ma = []
 @showprogress for organism in organisms
     name = organism_df.Species[organism_df.Organism .== organism][1]
     lines = read_lines("C:/Users/jeppe/OneDrive/Documenten/Bioinformatics/Tweede master/Master Thesis/Assembly_Theory/GEMs/bin/kegg-small/data/lookup/$organism.lookup_v20250320a.txt")
@@ -74,14 +82,21 @@ organism_df = CSV.read("C:/Users/jeppe/OneDrive/Documenten/Bioinformatics/Tweede
         cpd = cpd_df.cpd[i]
         if cpd in all_MAs.cpd && !isnan(all_MAs[all_MAs.cpd .== cpd, :].ma[1])
             cpd_df[i, "ma"] = all_MAs[all_MAs.cpd .== cpd, :].ma[1]
+        elseif !(cpd in all_MAs.cpd)
+            # println("cpd $cpd not found in all_MAs")
+            missing_ma = push!(missing_ma, cpd)
         end
     end
     
-    histogram(cpd_df.ma, dpi = 600, title="MA values for $name", xlabel="MA value", ylabel="Frequency", legend=false)
-    savefig("C:/Users/jeppe/OneDrive/Documenten/Bioinformatics/Tweede master/Master Thesis/Assembly_Theory/GEMs/figures/organisms_MA_hist/MA_histogram_$organism.png")
+    histo = Figure();
+    histo[1,1] = Axis(histo, title="MA values for $name", xlabel="MA value", ylabel="Frequency")
+    hist!(histo[1,1], [ma for ma in cpd_df.ma if !isnan(ma)], bins=40, color = :dodgerblue)
+    histo
+    CairoMakie.save("C:/Users/jeppe/OneDrive/Documenten/Bioinformatics/Tweede master/Master Thesis/Assembly_Theory/GEMs/figures/organisms_MA_hist/makie_MA_histogram_$organism.png", histo, px_per_unit=5)
 
     CSV.write("C:/Users/jeppe/OneDrive/Documenten/Bioinformatics/Tweede master/Master Thesis/Assembly_Theory/GEMs/data/pathway_complexities/organism_MA_values/MA_$organism.csv", cpd_df; header=true)
 end
+missings = unique(missing_ma)
 
 d = zeros(length(organisms), length(organisms))
 
@@ -118,11 +133,14 @@ for i in 1:length(organisms)
     end
 end
 
-hm = heatmap(d, dpi=600, size=(600, 500), title="Wasserstein distance between organisms", xlabel="Organisms", ylabel="Organisms")
-savefig("C:/Users/jeppe/OneDrive/Documenten/Bioinformatics/Tweede master/Master Thesis/Assembly_Theory/GEMs/figures/MA_heatmap.png")
+hm = Figure();
+hm[1,1] = Axis(hm, title="Heatmap of MA distance matrix", xlabel="Organisms", ylabel="Organisms")
+CairoMakie.heatmap!(hm[1,1], d, colormap = :viridis)
+CairoMakie.save("C:/Users/jeppe/OneDrive/Documenten/Bioinformatics/Tweede master/Master Thesis/Assembly_Theory/GEMs/figures/makie_MA_heatmap.png", hm, px_per_unit=5)
+
 CSV.write("C:/Users/jeppe/OneDrive/Documenten/Bioinformatics/Tweede master/Master Thesis/Assembly_Theory/GEMs/data/phylogeny/MA_distance_matrix.csv", Tables.table(d))
 
-d_scaled = (d .- mean(d)) ./ std(d)
+# d_scaled = (d .- mean(d)) ./ std(d)
 
 mds = fit(MDS, d; distances=true, maxoutdim=2)
 Y = predict(mds)
@@ -134,12 +152,13 @@ bacteria = Y[:, organism_df.Kingdom .== "Bacteria"]
 protists = Y[:, organism_df.Kingdom .== "Protists"]
 archaea = Y[:, organism_df.Kingdom .== "Archaea"]
 
-mdsplot = scatter(animals[1,:], animals[2,:], marker=:circle,linewidth=0, label = "Animals", dpi = 600);
-scatter!(plants[1,:], plants[2,:], marker=:circle, linewidth=0, label = "Plants");
-scatter!(fungi[1,:], fungi[2,:], marker=:circle, linewidth=0, label = "Fungi");
-scatter!(bacteria[1,:], bacteria[2,:], marker=:circle, linewidth=0, label = "Bacteria");
-scatter!(protists[1,:], protists[2,:], marker=:circle, linewidth=0, label = "Protists");
-scatter!(archaea[1,:], archaea[2,:], marker=:circle, linewidth=0, label = "Archaea");
+using Plots
+mdsplot = Plots.scatter(animals[1,:], animals[2,:], marker=:circle,linewidth=0, label = "Animals", dpi = 600);
+Plots.scatter!(plants[1,:], plants[2,:], marker=:circle, linewidth=0, label = "Plants");
+Plots.scatter!(fungi[1,:], fungi[2,:], marker=:circle, linewidth=0, label = "Fungi");
+Plots.scatter!(bacteria[1,:], bacteria[2,:], marker=:circle, linewidth=0, label = "Bacteria");
+Plots.scatter!(protists[1,:], protists[2,:], marker=:circle, linewidth=0, label = "Protists");
+Plots.scatter!(archaea[1,:], archaea[2,:], marker=:circle, linewidth=0, label = "Archaea");
 display(mdsplot)
 
 njclusts = regNJ(d)
@@ -149,12 +168,11 @@ labels = organisms
 nwstring = newickstring(njclusts, labels; labelinternalnodes=true)
 
 # write("C:/Users/jeppe/OneDrive/Documenten/Bioinformatics/Tweede master/Master Thesis/Assembly_Theory/GEMs/data/phylogeny/tree.nwk", nwstring)
-Phylo.upgma(d, labels)
+# Phylo.upgma(d, labels)
 
 matree = open(parsenewick, Phylo.path("C:/Users/jeppe/OneDrive/Documenten/Bioinformatics/Tweede master/Master Thesis/Assembly_Theory/GEMs/data/phylogeny/tree.nwk"))
 default(linecolor = :black, size = (400, 400))
-plot(matree, size = (800, 1200), showtips = true)
-
+Plots.plot(matree, size = (800, 1200), showtips = true)
 
 using Clustering
 

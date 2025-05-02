@@ -63,7 +63,7 @@ rc2cpd_pairs = JSON3.read("../data/reactions/rc_cpd_pairs.json", Dict{String, Ve
 pathway_metadata = CSV.read("../data/reactions/pathway_metadata.csv", DataFrame)
 pathway_list = pathway_metadata.id
 skipped_pathways = ["map00510", "map00532", "map00563", "map00530", "map00190","map00271",
-"map00272","map00031","map00150","map01030","map01031","map01032","map00533","map00602","map00601",
+"map00272","map00031","map00150","map00252","map01030","map01031","map01032","map00533","map00602","map00601",
 "map00534", "map00603", "map00531", "map00512", "map00604"]
 
 # keep track of missing MA values

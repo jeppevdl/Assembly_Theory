@@ -22,6 +22,7 @@ function KEGGAPI.kegg_get(query::Vector{String}, option::String, retries::Int)
 	end
 end
 
+# use code below to get the pathways and compounds from KEGG in case of no prefetched molfiles ---------------------
 pathway = "pathway"
 
 # Get unique paths, unique compounds and relationship between both
@@ -66,6 +67,11 @@ complexities = DataFrame(id=String[], n_atoms=Dict{Symbol,Int}[], hybr=Vector{In
 				write(f, mol)
 			end
 		end
+		if !isfile("C:/Users/jeppe/OneDrive/Documenten/Bioinformatics/Tweede master/Master Thesis/Assembly_Theory/GEMs/bin/assembly_go/molfiles/$id.mol")
+			open("C:/Users/jeppe/OneDrive/Documenten/Bioinformatics/Tweede master/Master Thesis/Assembly_Theory/GEMs/bin/assembly_go/molfiles/$id.mol", "w") do f
+				write(f, mol)
+			end
+		end
 		try 
 			# println(id)
 			graph = MolecularGraph.sdftomol("C:/Users/jeppe/OneDrive/Documenten/Bioinformatics/Tweede master/Master Thesis/Assembly_Theory/GEMs/data/molfiles/$id.mol")
@@ -83,32 +89,37 @@ complexities = DataFrame(id=String[], n_atoms=Dict{Symbol,Int}[], hybr=Vector{In
     end
 end
 @info "Calculated complexity values for $(nrow(complexities)) compounds out of $(length(allmol))"
+#---------------------------------------------------------------------------------------------------------------------------------
 
+# use this code block below if mol files are already downloaded and MA values are precalculated
 
-# all_ma = CSV.read("C:/Users/jeppe/OneDrive/Documenten/Bioinformatics/Tweede master/Master Thesis/Assembly_Theory/GEMs/data/bash_MA_output/complete_MAs.csv", DataFrame)
-# complexities = DataFrame(id=String[], n_atoms=Dict{Symbol,Int}[], hybr=Vector{Int}[], n_rings=Vector{Int}[], ma=Vector{Int64}[])
-# @info "Calculating complexity of compounds..."
-# @showprogress for row in eachrow(all_ma)
-# 	cpd = row.cpd
-# 	ma = row.ma
-# 	if ma != "na"
-# 		try
-# 			# println(id)
-# 			graph = MolecularGraph.sdftomol("C:/Users/jeppe/OneDrive/Documenten/Bioinformatics/Tweede master/Master Thesis/Assembly_Theory/GEMs/data/molfiles/$cpd.mol")
+all_ma = CSV.read("C:/Users/jeppe/OneDrive/Documenten/Bioinformatics/Tweede master/Master Thesis/Assembly_Theory/GEMs/data/bash_MA_output/complete_MAs.csv", DataFrame)
+complexities = DataFrame(id=String[], n_atoms=Dict{Symbol,Int}[], hybr=Vector{Int}[], n_rings=Vector{Int}[], ma=Vector{Int64}[], mass = Vector{Float64}[])
+@info "Calculating complexity of compounds..."
+@showprogress for row in eachrow(all_ma)
+	cpd = row.cpd
+	ma = row.ma
+	if ma != "na"
+		try
+			# println(id)
+			graph = MolecularGraph.sdftomol("C:/Users/jeppe/OneDrive/Documenten/Bioinformatics/Tweede master/Master Thesis/Assembly_Theory/GEMs/data/molfiles/$cpd.mol")
 		
-# 			n_atoms = MolecularGraph.atom_counter(graph)
-# 			hybr = MolecularGraph.hybridization(graph)
-# 			n_rings = MolecularGraph.ring_count(graph)
+			n_atoms = MolecularGraph.atom_counter(graph)
+			hybr = MolecularGraph.hybridization(graph)
+			n_rings = MolecularGraph.ring_count(graph)
+			mass = MolecularGraph.exact_mass(graph)
 
-# 			push!(complexities, (cpd, n_atoms, hybr, n_rings, ma), promote=true)
+			push!(complexities, (cpd, n_atoms, hybr, n_rings, ma, mass), promote=true)
 
-# 		catch e
-# 			@warn e
-# 			println("Failed to calculate complexity for $cpd")
-# 		end
-# 	end
-# end
-# @info "Calculated complexity values for $(nrow(complexities)) compounds out of $(length(all_ma.cpd))"
+		catch e
+			@warn e
+			println("Failed to calculate complexity for $cpd")
+		end
+	end
+end
+@info "Calculated complexity values for $(nrow(complexities)) compounds out of $(length(all_ma.cpd))"
+
+#---------------------------------------------------------------------------------------------------------------------------------
 
 function count_rings(complexities::DataFrame)
 	unique_rings = unique.(filter.(x -> x > 0, complexities.n_rings))

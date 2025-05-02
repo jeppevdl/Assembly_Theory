@@ -1,10 +1,10 @@
 #!/bin/bash
 
 # Define the working directories and JSON files
-MAP="extras"
+MAP="organism_extras"
 WORK_DIR="$HOME/OneDrive/Documenten/Bioinformatics/Tweede master/Master Thesis/Assembly_Theory/GEMs"
 ASSEMBLY_GO_DIR="$WORK_DIR/bin/assembly_go"
-INPUT_FILE="$WORK_DIR/data/bash_MA_output/extra_ids.txt"
+INPUT_FILE="$WORK_DIR/data/bash_MA_output/missing_org_MAs.txt"
 OUTPUT_FILE="$WORK_DIR/data/bash_MA_output/bash_output_$MAP.json"
 TIMEOUT_DURATION=30  # Timeout in seconds
 
