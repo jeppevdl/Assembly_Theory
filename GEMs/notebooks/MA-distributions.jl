@@ -71,27 +71,39 @@ sort!(df, by=x->(x["Superkingdom"], x["Kingdom"], x["Genus"],x["ma"]), rev=true)
 
 # ╔═╡ 621a2c63-4e92-4210-a354-1817eaae4128
 begin
-	set_aog_theme!()
-	data(df) * mapping(:org => presorted, :ma, color=:Superkingdom) * visual(BoxPlot; show_outliers=false, whiskerlinewidth=0.2) |> draw
+    set_aog_theme!()
+    plt = data(df) * 
+          mapping(:org => presorted, :ma, color=:Superkingdom) * 
+          visual(BoxPlot; show_outliers=false, whiskerlinewidth=0.2)
+    fig = draw(plt; axis=(xticklabelsvisible=false,ylabel="MA",xlabel="Organism"))
 end
 
+# ╔═╡ 3e007d4a-87f3-4626-9614-9472ff2165a3
+save("../figures/eu_vs_pro.png", fig; px_per_unit=5)
+
 # ╔═╡ 6a70b41c-d36d-4175-846c-42f68a78a8af
-data(@chain DataFrame(df) begin
-	groupby(:org)
-	combine(
-		:,
-		:ma => median,
-		:ma => minimum,
-		:ma => maximum,
-		:ma => (x -> quantile(x, 0.25)) => :ma_q1,
-		:ma => (x -> quantile(x, 0.75)) => :ma_q3,
-		:ma => (x -> quantile(x, 0.75) - quantile(x, 0.25)) => :ma_iqr,
-	)
-	sort([:Superkingdom, :Kingdom, :ma_median, :ma_iqr,:ma_q3,:ma_q1], rev=true)
-end) *
-mapping(:org => presorted, :ma, color=:Kingdom) *
-visual(BoxPlot; markersize=2, whiskerlinewidth=0.2)|> draw()
-#visual(Scatter; markersize=2)|> draw()
+begin
+	plt2 = data(@chain DataFrame(df) begin
+		groupby(:org)
+		combine(
+			:,
+			:ma => median,
+			:ma => minimum,
+			:ma => maximum,
+			:ma => (x -> quantile(x, 0.25)) => :ma_q1,
+			:ma => (x -> quantile(x, 0.75)) => :ma_q3,
+			:ma => (x -> quantile(x, 0.75) - quantile(x, 0.25)) => :ma_iqr,
+		)
+		sort([:Superkingdom, :Kingdom, :ma_median, :ma_iqr,:ma_q3,:ma_q1], rev=true)
+	end) *
+	mapping(:org => presorted, :ma, color=:Kingdom) *
+	visual(BoxPlot; markersize=2, whiskerlinewidth=0.2)
+	fig2 = draw(plt2; axis=(xticklabelsvisible=false, ylabel="MA", xlabel="Organism"))
+	#visual(Scatter; markersize=2)|> draw()
+end
+
+# ╔═╡ d24d12f7-3d45-44b1-a090-bd7b00c02477
+save("../figures/kingdom.png", fig2; px_per_unit=5)
 
 # ╔═╡ ec649d38-7bdc-44cf-b5c8-71098df3b21e
 org_tree = readnw(String(read("../data/phylogeny/tree.nwk")))
@@ -1978,7 +1990,9 @@ version = "3.6.0+0"
 # ╠═60863c53-db07-4d4c-9cba-2f9f0322eb9f
 # ╠═e77d8b3e-98f2-4804-98b1-9194bfce4b15
 # ╠═621a2c63-4e92-4210-a354-1817eaae4128
+# ╠═3e007d4a-87f3-4626-9614-9472ff2165a3
 # ╠═6a70b41c-d36d-4175-846c-42f68a78a8af
+# ╠═d24d12f7-3d45-44b1-a090-bd7b00c02477
 # ╠═5f087459-3a11-40a0-a040-37ca7be45c36
 # ╠═efe270e9-5f20-4e69-97de-8fed8ac5996c
 # ╠═ec649d38-7bdc-44cf-b5c8-71098df3b21e

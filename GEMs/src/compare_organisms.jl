@@ -5,7 +5,7 @@ end
 Pkg.activate(".")
 
 using CSV, DataFrames, ProgressMeter, JSON3, KEGGAPI, StatsPlots, 
-ExactOptimalTransport, Distributions, StatsBase, NeighborJoining, Phylo, MultivariateStats, CairoMakie
+ExactOptimalTransport, Distributions, StatsBase, NeighborJoining, Phylo, MultivariateStats, CairoMakie, UMAP, TSne
 
 function read_lines(file_path::String)
     open(file_path) do file
@@ -28,22 +28,26 @@ function KEGGAPI.kegg_get(query::Vector{String}, option::String, retries::Int)
 	end
 end
 
+# Read the KEGG compound - MA value ----------------------------------------------------------------------------------------------------------------------
 all_MAs = CSV.read("C:/Users/jeppe/OneDrive/Documenten/Bioinformatics/Tweede master/Master Thesis/Assembly_Theory/GEMs/data/bash_MA_output/complete_MAs.csv", DataFrame; header=true)
 all_MAs = all_MAs[all_MAs.ma .!= "na", :]
 all_MAs.ma = parse.(Int64, all_MAs.ma)
 
+# Make histogram of all MA values----------------------------------------------------------------------------------------------------------------------
 allhist = Figure();
 allhist[1,1] = Axis(allhist, title="MA values for all gathered compounds", xlabel="MA value", ylabel="Frequency")
 hist!(allhist[1,1], all_MAs.ma, bins=75, color = :lightseagreen)
 allhist;
 CairoMakie.save("C:/Users/jeppe/OneDrive/Documenten/Bioinformatics/Tweede master/Master Thesis/Assembly_Theory/GEMs/figures/all_MA_hist/all_MA_histogram_makie.png", allhist, px_per_unit=5)
 
+# Make density plot of all MA values----------------------------------------------------------------------------------------------------------------------
 alldens = Figure();
 alldens[1,1] = Axis(alldens, title="MA values for all gathered compounds", xlabel="MA value", ylabel="Density")
 CairoMakie.density!(alldens[1,1], all_MAs.ma, color = (:lightseagreen, 0.5), strokewidth=2, strokecolor = :lightseagreen)
 alldens;
 CairoMakie.save("C:/Users/jeppe/OneDrive/Documenten/Bioinformatics/Tweede master/Master Thesis/Assembly_Theory/GEMs/figures/all_MA_hist/all_MA_density_makie.png", alldens, px_per_unit=5)
 
+# Study second peak in histogram----------------------------------------------------------------------------------------------------------------------
 second_peak = all_MAs[(all_MAs.ma .>= 35 .&& all_MAs.ma .<= 50), :]
 br_dict = Dict{String, Int}()
 no_br = 0
@@ -67,9 +71,11 @@ for cpd in second_peak.cpd
 end
 sorted_br_dict = sort(collect(br_dict), by=x->x[2], rev=true)
 
+# Read the list of organisms----------------------------------------------------------------------------------------------------------------------
 organisms = read_lines("C:/Users/jeppe/OneDrive/Documenten/Bioinformatics/Tweede master/Master Thesis/Assembly_Theory/GEMs/bin/kegg-small/data/kegg-small.lst")
 organism_df = CSV.read("C:/Users/jeppe/OneDrive/Documenten/Bioinformatics/Tweede master/Master Thesis/Assembly_Theory/GEMs/bin/kegg-small/data/kegg-small.tsv", DataFrame; header=true)
 
+# Link MA values to organism compounds and produce histograms----------------------------------------------------------------------------------------------------------------------
 missing_ma = []
 @showprogress for organism in organisms
     name = organism_df.Species[organism_df.Organism .== organism][1]
@@ -98,8 +104,14 @@ missing_ma = []
 end
 missings = unique(missing_ma)
 
+# Preallocate the distance matrix----------------------------------------------------------------------------------------------------------------------
 d = zeros(length(organisms), length(organisms))
 
+# Set to desired quantiles
+lower_quantile = 0.9
+upper_quantile = 1
+
+# Calculate the Wasserstein distance between the MA distributions between the quantiles of each pair of organisms
 for i in 1:length(organisms)
     organism = organisms[i]
     for j in i+1:length(organisms)
@@ -107,6 +119,15 @@ for i in 1:length(organisms)
         if organism != organism2
             cpd_df_1 = CSV.read("C:/Users/jeppe/OneDrive/Documenten/Bioinformatics/Tweede master/Master Thesis/Assembly_Theory/GEMs/data/pathway_complexities/organism_MA_values/MA_$organism.csv", DataFrame; header=true)
             cpd_df_2 = CSV.read("C:/Users/jeppe/OneDrive/Documenten/Bioinformatics/Tweede master/Master Thesis/Assembly_Theory/GEMs/data/pathway_complexities/organism_MA_values/MA_$organism2.csv", DataFrame; header=true)
+
+            q1_1 = quantile(cpd_df_1.ma[isnan.(cpd_df_1.ma) .|> !], lower_quantile)
+            q1_2 = quantile(cpd_df_1.ma[isnan.(cpd_df_1.ma) .|> !], upper_quantile)
+            q2_1 = quantile(cpd_df_2.ma[isnan.(cpd_df_2.ma) .|> !], lower_quantile)
+            q2_2 = quantile(cpd_df_2.ma[isnan.(cpd_df_2.ma) .|> !], upper_quantile)
+
+            # Filter out the values outside the quantiles
+            cpd_df_1 = cpd_df_1[cpd_df_1.ma .>= q1_1 .&& cpd_df_1.ma .<= q1_2, :]
+            cpd_df_2 = cpd_df_2[cpd_df_2.ma .>= q2_1 .&& cpd_df_2.ma .<= q2_2, :]
 
             # Clean and aggregate x
             x_clean = filter(!isnan, cpd_df_1.ma)
@@ -133,16 +154,24 @@ for i in 1:length(organisms)
     end
 end
 
+# Plot the distance matrix as a heatmap----------------------------------------------------------------------------------------------------------------------
+Q1 = lower_quantile * 100 |> Int
+Q2 = upper_quantile * 100 |> Int
 hm = Figure();
-hm[1,1] = Axis(hm, title="Heatmap of MA distance matrix", xlabel="Organisms", ylabel="Organisms")
+Axis(hm[1,1], title="Heatmap of MA distance matrix: MA distribution between Q$Q1 and Q$Q2", xlabel="Organisms", ylabel="Organisms")
 CairoMakie.heatmap!(hm[1,1], d, colormap = :viridis)
-CairoMakie.save("C:/Users/jeppe/OneDrive/Documenten/Bioinformatics/Tweede master/Master Thesis/Assembly_Theory/GEMs/figures/makie_MA_heatmap.png", hm, px_per_unit=5)
+Colorbar(hm[1, 2], label = "Wasserstein Distance", width = 15)
+hm
+CairoMakie.save("C:/Users/jeppe/OneDrive/Documenten/Bioinformatics/Tweede master/Master Thesis/Assembly_Theory/GEMs/figures/makie_MA_heatmap_Q$(Q1)_Q$(Q2).png",
+hm, px_per_unit=5)
 
-CSV.write("C:/Users/jeppe/OneDrive/Documenten/Bioinformatics/Tweede master/Master Thesis/Assembly_Theory/GEMs/data/phylogeny/MA_distance_matrix.csv", Tables.table(d))
+CSV.write("C:/Users/jeppe/OneDrive/Documenten/Bioinformatics/Tweede master/Master Thesis/Assembly_Theory/GEMs/data/phylogeny/MA_distance_matrix_Q$(Q1)_Q$(Q2).csv", Tables.table(d))
 
-# d_scaled = (d .- mean(d)) ./ std(d)
+# Scale the distance matrix-------------------------------------------------------------------------------------------------------------
+d_scaled = (d .- mean(d)) ./ std(d)
 
-mds = fit(MDS, d; distances=true, maxoutdim=2)
+# Make an MDS plot----------------------------------------------------------------------------------------------------------------------
+mds = fit(MDS, d_scaled; distances=true, maxoutdim=2)
 Y = predict(mds)
 
 animals = Y[:, organism_df.Kingdom .== "Animals"]
@@ -152,47 +181,100 @@ bacteria = Y[:, organism_df.Kingdom .== "Bacteria"]
 protists = Y[:, organism_df.Kingdom .== "Protists"]
 archaea = Y[:, organism_df.Kingdom .== "Archaea"]
 
-using Plots
-mdsplot = Plots.scatter(animals[1,:], animals[2,:], marker=:circle,linewidth=0, label = "Animals", dpi = 600);
-Plots.scatter!(plants[1,:], plants[2,:], marker=:circle, linewidth=0, label = "Plants");
-Plots.scatter!(fungi[1,:], fungi[2,:], marker=:circle, linewidth=0, label = "Fungi");
-Plots.scatter!(bacteria[1,:], bacteria[2,:], marker=:circle, linewidth=0, label = "Bacteria");
-Plots.scatter!(protists[1,:], protists[2,:], marker=:circle, linewidth=0, label = "Protists");
-Plots.scatter!(archaea[1,:], archaea[2,:], marker=:circle, linewidth=0, label = "Archaea");
-display(mdsplot)
+mdsplot = Figure(size=(800,600));
+ax = Axis(mdsplot[1, 1], title = "MDS Plot: MA distribution between Q$Q1 and Q$Q2", xlabel = "Dimension 1", ylabel = "Dimension 2", width = 600)
+palet = palette(:seaborn_colorblind);
+CairoMakie.scatter!(ax, animals[1, :], animals[2, :], color = palet[1], label = "Animals")
+CairoMakie.scatter!(ax, plants[1, :], plants[2, :], color = palet[2], label = "Plants")
+CairoMakie.scatter!(ax, fungi[1, :], fungi[2, :], color = palet[3], label = "Fungi")
+CairoMakie.scatter!(ax, bacteria[1, :], bacteria[2, :], color = palet[4], label = "Bacteria")
+CairoMakie.scatter!(ax, protists[1, :], protists[2, :], color = palet[5], label = "Protists")
+CairoMakie.scatter!(ax, archaea[1, :], archaea[2, :], color = palet[9], label = "Archaea")
+Legend(mdsplot[1, 2], ax, "Kingdoms", tellwidth = false)
+mdsplot
+CairoMakie.save("C:/Users/jeppe/OneDrive/Documenten/Bioinformatics/Tweede master/Master Thesis/Assembly_Theory/GEMs/figures/mds_plot_Q$(Q1)_Q$(Q2).png", mdsplot, px_per_unit=5)
 
+# Make a UMAP plot---------------------------------------------------------------------------------------------------------------------- 
+Random.seed!(666)
+embedding = umap(d_scaled, 2; metric=:precomputed)
+animals = embedding[:, organism_df.Kingdom .== "Animals"]
+plants = embedding[:, organism_df.Kingdom .== "Plants"]
+fungi = embedding[:, organism_df.Kingdom .== "Fungi"]
+bacteria = embedding[:, organism_df.Kingdom .== "Bacteria"]
+protists = embedding[:, organism_df.Kingdom .== "Protists"]
+archaea = embedding[:, organism_df.Kingdom .== "Archaea"]
+
+umapplot = Figure(size=(800,600));
+ax = Axis(umapplot[1, 1], title = "UMAP Plot: MA distribution between Q$Q1 and Q$Q2", xlabel = "Dimension 1", ylabel = "Dimension 2", width = 600)
+palet = palette(:seaborn_colorblind);
+CairoMakie.scatter!(ax, animals[1, :], animals[2, :], color = palet[1], label = "Animals")
+CairoMakie.scatter!(ax, plants[1, :], plants[2, :], color = palet[2], label = "Plants")
+CairoMakie.scatter!(ax, fungi[1, :], fungi[2, :], color = palet[3], label = "Fungi")
+CairoMakie.scatter!(ax, bacteria[1, :], bacteria[2, :], color = palet[4], label = "Bacteria")
+CairoMakie.scatter!(ax, protists[1, :], protists[2, :], color = palet[5], label = "Protists")
+CairoMakie.scatter!(ax, archaea[1, :], archaea[2, :], color = palet[9], label = "Archaea")
+Legend(umapplot[1, 2], ax, "Kingdoms", tellwidth = false)
+umapplot
+
+CairoMakie.save("C:/Users/jeppe/OneDrive/Documenten/Bioinformatics/Tweede master/Master Thesis/Assembly_Theory/GEMs/figures/umap_plot_Q$(Q1)_Q$(Q2).png", umapplot, px_per_unit=5)
+
+# Make a t-SNE plot----------------------------------------------------------------------------------------------------------------------
+tsne_embedding = tsne(d_scaled, 2, 0, 50000, 70; distance=true)
+tsne_embedding = tsne_embedding'
+animals = tsne_embedding[:, organism_df.Kingdom .== "Animals"]
+plants = tsne_embedding[:, organism_df.Kingdom .== "Plants"]
+fungi = tsne_embedding[:, organism_df.Kingdom .== "Fungi"]
+bacteria = tsne_embedding[:, organism_df.Kingdom .== "Bacteria"]
+protists = tsne_embedding[:, organism_df.Kingdom .== "Protists"]
+archaea = tsne_embedding[:, organism_df.Kingdom .== "Archaea"]
+
+tsneplot = Figure(size=(800,600));
+ax = Axis(tsneplot[1, 1], title = "t-SNE Plot: MA distribution between Q$Q1 and Q$Q2", xlabel = "Dimension 1", ylabel = "Dimension 2", width = 600)
+palet = palette(:seaborn_colorblind);
+CairoMakie.scatter!(ax, animals[1, :], animals[2, :], color = palet[1], label = "Animals")
+CairoMakie.scatter!(ax, plants[1, :], plants[2, :], color = palet[2], label = "Plants")
+CairoMakie.scatter!(ax, fungi[1, :], fungi[2, :], color = palet[3], label = "Fungi")
+CairoMakie.scatter!(ax, bacteria[1, :], bacteria[2, :], color = palet[4], label = "Bacteria")
+CairoMakie.scatter!(ax, protists[1, :], protists[2, :], color = palet[5], label = "Protists")
+CairoMakie.scatter!(ax, archaea[1, :], archaea[2, :], color = palet[9], label = "Archaea")
+Legend(tsneplot[1, 2], ax, "Kingdoms", tellwidth = false)
+tsneplot
+CairoMakie.save("C:/Users/jeppe/OneDrive/Documenten/Bioinformatics/Tweede master/Master Thesis/Assembly_Theory/GEMs/figures/tsne_plot_Q$(Q1)_Q$(Q2).png", tsneplot, px_per_unit=5)
+
+
+# Tree construction----------------------------------------------------------------------------------------------------------------------
 njclusts = regNJ(d)
 # njclustsfast = fastNJ(d)
 labels = organisms
 # nwstring = newickstring(njclusts, labels)
 nwstring = newickstring(njclusts, labels; labelinternalnodes=true)
 
-# write("C:/Users/jeppe/OneDrive/Documenten/Bioinformatics/Tweede master/Master Thesis/Assembly_Theory/GEMs/data/phylogeny/tree.nwk", nwstring)
+write("C:/Users/jeppe/OneDrive/Documenten/Bioinformatics/Tweede master/Master Thesis/Assembly_Theory/GEMs/data/phylogeny/tree.nwk", nwstring)
 # Phylo.upgma(d, labels)
 
 matree = open(parsenewick, Phylo.path("C:/Users/jeppe/OneDrive/Documenten/Bioinformatics/Tweede master/Master Thesis/Assembly_Theory/GEMs/data/phylogeny/tree.nwk"))
 default(linecolor = :black, size = (400, 400))
 Plots.plot(matree, size = (800, 1200), showtips = true)
 
-using Clustering
+# using Clustering
 
-function hclust_to_newick(tree::Clustering.Hclust, labels::Vector{String})
-    n = length(labels)
+# function hclust_to_newick(tree::Clustering.Hclust, labels::Vector{String})
+#     n = length(labels)
 
-    function recurse(node::Int)
-        if node < 0
-            return labels[-node]
-        else
-            l = tree.merge[node, 1]
-            r = tree.merge[node, 2]
-            return "(" * recurse(l) * "," * recurse(r) * ")"
-        end
-    end
+#     function recurse(node::Int)
+#         if node < 0
+#             return labels[-node]
+#         else
+#             l = tree.merge[node, 1]
+#             r = tree.merge[node, 2]
+#             return "(" * recurse(l) * "," * recurse(r) * ")"
+#         end
+#     end
 
-    # There are n-1 merges, so the final node is at index n-1
-    return recurse(n - 1) * ";"
-end
+#     # There are n-1 merges, so the final node is at index n-1
+#     return recurse(n - 1) * ";"
+# end
 
-ctree = hclust(d)
+# ctree = hclust(d)
 
-newick_str = hclust_to_newick(ctree, labels)
+# newick_str = hclust_to_newick(ctree, labels)

@@ -1,11 +1,10 @@
 #!/bin/bash
 
 # Define the working directories and JSON files
-MAP="organism_extras"
+MAP="aa"
 WORK_DIR="$HOME/OneDrive/Documenten/Bioinformatics/Tweede master/Master Thesis/Assembly_Theory/GEMs"
 ASSEMBLY_GO_DIR="$WORK_DIR/bin/assembly_go"
-INPUT_FILE="$WORK_DIR/data/bash_MA_output/missing_org_MAs.txt"
-OUTPUT_FILE="$WORK_DIR/data/bash_MA_output/bash_output_$MAP.json"
+INPUT_FILE="$WORK_DIR/data/bash_MA_output/aa_filenames.txt"
 TIMEOUT_DURATION=30  # Timeout in seconds
 
 # Ensure jq is installed
@@ -38,11 +37,14 @@ for compoundId in $COMPOUND_IDS; do
     COMMAND="./assembly molfiles/$compoundId.mol"
     
     # Run the command with a timeout and send SIGINT if it times out
-    timeout --foreground -s SIGINT $TIMEOUT_DURATION $COMMAND > "output/output_$compoundId.txt" 2> "output/error_$compoundId.txt"
-    EXIT_STATUS=$?
+    # timeout --foreground -s SIGINT $TIMEOUT_DURATION $COMMAND > "output/output_$compoundId.txt" 2> "output/error_$compoundId.txt"
+    # EXIT_STATUS=$?
+
+    #same without timeout
+    $COMMAND > "output/AA_output_$compoundId.txt" 2> "output/AA_error_$compoundId.txt"
     
     # Extract the first number found in the output file
-    result=$(grep -o '[0-9]\+' "output/output_$compoundId.txt" | head -n 1)
+    result=$(grep -o '[0-9]\+' "output/AA_output_$compoundId.txt" | head -n 1)
     
     if [ -n "$result" ]; then
         echo -e "$compoundId\t$result" >> "$WORK_DIR/data/bash_MA_output/($MAP)_MA.tsv"
@@ -51,8 +53,8 @@ for compoundId in $COMPOUND_IDS; do
     fi
     
     # Check for errors
-    if [ -s "output/error_$compoundId.txt" ]; then
+    if [ -s "output/AA_error_$compoundId.txt" ]; then
         echo "Error output for compound ID $compoundId:"
-        cat "output/error_$compoundId.txt"
+        cat "output/AA_error_$compoundId.txt"
     fi
 done
