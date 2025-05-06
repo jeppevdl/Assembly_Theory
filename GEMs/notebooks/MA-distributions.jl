@@ -106,7 +106,11 @@ end
 save("../figures/kingdom.png", fig2; px_per_unit=5)
 
 # ╔═╡ ec649d38-7bdc-44cf-b5c8-71098df3b21e
-org_tree = readnw(String(read("../data/phylogeny/tree.nwk")))
+begin
+	Q1 = 0
+	Q2 = 100
+	org_tree = readnw(String(read("../data/phylogeny/tree_Q$(Q1)_Q$(Q2).nwk")))
+end
 
 # ╔═╡ f28ea0d4-4b1e-425a-85a6-b4c7cc20d710
 specie2tax(s,tax = :Kingdom) = Dict(map(eachrow(taxonomy[!, [:Organism, :Superkingdom, :Kingdom, :Phylum, :Genus]])) do r
@@ -234,6 +238,9 @@ begin
 	
 	f1
 end
+
+# ╔═╡ 209be2c4-af02-447b-a064-616315b938f5
+save("../figures/full_tree_Q$(Q1)_Q$(Q2).png", f1; px_per_unit=5)
 
 # ╔═╡ 00000000-0000-0000-0000-000000000001
 PLUTO_PROJECT_TOML_CONTENTS = """
@@ -2001,5 +2008,6 @@ version = "3.6.0+0"
 # ╠═bd0d86f2-eaef-4f25-8f06-96b162deedb2
 # ╠═e116e2f3-e15d-473e-859a-0e30a6c4dbde
 # ╠═72b09c49-7eae-4761-8628-1c8a87a0a27b
+# ╠═209be2c4-af02-447b-a064-616315b938f5
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002

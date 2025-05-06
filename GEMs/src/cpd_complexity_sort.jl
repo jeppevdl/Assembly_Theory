@@ -56,9 +56,6 @@ allmol = Dict{String,Union{Missing,String}}()
 end
 @info "Found $(length(filter(x -> !ismissing(x), allmol))) out of $(length(allcpd)) compounds with mol files"
 
-# Calculate complexity of compounds
-complexities = DataFrame(id=String[], n_atoms=Dict{Symbol,Int}[], hybr=Vector{Int}[], n_rings=Vector{Int}[])
-@info "Calculating complexity of compounds..."
 @showprogress for (cpd, mol) in allmol
     if mol !== missing
 		id = split(cpd, ":")[2]
@@ -72,23 +69,8 @@ complexities = DataFrame(id=String[], n_atoms=Dict{Symbol,Int}[], hybr=Vector{In
 				write(f, mol)
 			end
 		end
-		try 
-			# println(id)
-			graph = MolecularGraph.sdftomol("C:/Users/jeppe/OneDrive/Documenten/Bioinformatics/Tweede master/Master Thesis/Assembly_Theory/GEMs/data/molfiles/$id.mol")
-			
-			n_atoms = MolecularGraph.atom_counter(graph)
-			hybr = MolecularGraph.hybridization(graph)
-			n_rings = MolecularGraph.ring_count(graph)
-
-			push!(complexities, (id, n_atoms, hybr, n_rings), promote=true)
-
-		catch e
-			@warn e
-			println("Failed to calculate complexity for $id")
-		end
     end
 end
-@info "Calculated complexity values for $(nrow(complexities)) compounds out of $(length(allmol))"
 #---------------------------------------------------------------------------------------------------------------------------------
 
 # use this code block below if mol files are already downloaded and MA values are precalculated

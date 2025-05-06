@@ -108,7 +108,7 @@ missings = unique(missing_ma)
 d = zeros(length(organisms), length(organisms))
 
 # Set to desired quantiles
-lower_quantile = 0.9
+lower_quantile = 0
 upper_quantile = 1
 
 # Calculate the Wasserstein distance between the MA distributions between the quantiles of each pair of organisms
@@ -158,9 +158,9 @@ end
 Q1 = lower_quantile * 100 |> Int
 Q2 = upper_quantile * 100 |> Int
 hm = Figure();
-Axis(hm[1,1], title="Heatmap of MA distance matrix: MA distribution between Q$Q1 and Q$Q2", xlabel="Organisms", ylabel="Organisms")
-CairoMakie.heatmap!(hm[1,1], d, colormap = :viridis)
-Colorbar(hm[1, 2], label = "Wasserstein Distance", width = 15)
+ax = Axis(hm[1,1], title="Heatmap of MA distance matrix: MA distribution between Q$Q1 and Q$Q2", xlabel="Organisms", ylabel="Organisms")
+heatmap_plot = CairoMakie.heatmap!(ax, d, colormap = :viridis)
+Colorbar(hm[1, 2], heatmap_plot, label = "Wasserstein Distance", width = 15)
 hm
 CairoMakie.save("C:/Users/jeppe/OneDrive/Documenten/Bioinformatics/Tweede master/Master Thesis/Assembly_Theory/GEMs/figures/makie_MA_heatmap_Q$(Q1)_Q$(Q2).png",
 hm, px_per_unit=5)
@@ -171,7 +171,7 @@ CSV.write("C:/Users/jeppe/OneDrive/Documenten/Bioinformatics/Tweede master/Maste
 d_scaled = (d .- mean(d)) ./ std(d)
 
 # Make an MDS plot----------------------------------------------------------------------------------------------------------------------
-mds = fit(MDS, d_scaled; distances=true, maxoutdim=2)
+mds = fit(MDS, d; distances=true, maxoutdim=2)
 Y = predict(mds)
 
 animals = Y[:, organism_df.Kingdom .== "Animals"]
@@ -196,7 +196,7 @@ CairoMakie.save("C:/Users/jeppe/OneDrive/Documenten/Bioinformatics/Tweede master
 
 # Make a UMAP plot---------------------------------------------------------------------------------------------------------------------- 
 Random.seed!(666)
-embedding = umap(d_scaled, 2; metric=:precomputed)
+embedding = umap(d, 2; metric=:precomputed)
 animals = embedding[:, organism_df.Kingdom .== "Animals"]
 plants = embedding[:, organism_df.Kingdom .== "Plants"]
 fungi = embedding[:, organism_df.Kingdom .== "Fungi"]
@@ -219,7 +219,7 @@ umapplot
 CairoMakie.save("C:/Users/jeppe/OneDrive/Documenten/Bioinformatics/Tweede master/Master Thesis/Assembly_Theory/GEMs/figures/umap_plot_Q$(Q1)_Q$(Q2).png", umapplot, px_per_unit=5)
 
 # Make a t-SNE plot----------------------------------------------------------------------------------------------------------------------
-tsne_embedding = tsne(d_scaled, 2, 0, 50000, 70; distance=true)
+tsne_embedding = tsne(d, 2, 0, 50000, 80; distance=true)
 tsne_embedding = tsne_embedding'
 animals = tsne_embedding[:, organism_df.Kingdom .== "Animals"]
 plants = tsne_embedding[:, organism_df.Kingdom .== "Plants"]
@@ -241,40 +241,44 @@ Legend(tsneplot[1, 2], ax, "Kingdoms", tellwidth = false)
 tsneplot
 CairoMakie.save("C:/Users/jeppe/OneDrive/Documenten/Bioinformatics/Tweede master/Master Thesis/Assembly_Theory/GEMs/figures/tsne_plot_Q$(Q1)_Q$(Q2).png", tsneplot, px_per_unit=5)
 
+# Minimum Spanning Tree----------------------------------------------------------------------------------------------------------------------
+using Graphs
+using GraphMakie, NetworkLayout
+
+A = d
+G = Graph(A)
+
+M = SimpleGraphFromIterator(prim_mst(G, A))
+
+kingdoms = ["Animals", "Plants", "Fungi", "Bacteria", "Protists", "Archaea"]
+palet = palette(:seaborn_colorblind);
+colors = Dict("Animals" => palet[1], "Plants" => palet[2], "Fungi" => palet[3],
+              "Bacteria" => palet[4], "Protists" => palet[5], "Archaea" => palet[9])
+
+
+node_color = [colors[k] for k in organism_df.Kingdom];
+
+f = Figure(size=(800, 600));
+ax = Axis(f[1, 1], title = "MST", width = 600)
+graphplot!(ax, M; node_color=node_color, node_size=10, layout = Stress())
+legend_handles = [CairoMakie.scatter!(ax, [NaN], [NaN]; color=colors[k], label=k) for k in kingdoms]
+Legend(f[1, 2], ax, "Kingdoms"; tellwidth=false)
+
+f
+
+CairoMakie.save("C:/Users/jeppe/OneDrive/Documenten/Bioinformatics/Tweede master/Master Thesis/Assembly_Theory/GEMs/figures/mst_plot_Q$(Q1)_Q$(Q2).png", f, px_per_unit=5)
 
 # Tree construction----------------------------------------------------------------------------------------------------------------------
 njclusts = regNJ(d)
 # njclustsfast = fastNJ(d)
+
 labels = organisms
+
 # nwstring = newickstring(njclusts, labels)
 nwstring = newickstring(njclusts, labels; labelinternalnodes=true)
 
-write("C:/Users/jeppe/OneDrive/Documenten/Bioinformatics/Tweede master/Master Thesis/Assembly_Theory/GEMs/data/phylogeny/tree.nwk", nwstring)
-# Phylo.upgma(d, labels)
+write("C:/Users/jeppe/OneDrive/Documenten/Bioinformatics/Tweede master/Master Thesis/Assembly_Theory/GEMs/data/phylogeny/tree_Q$(Q1)_Q$(Q2).nwk", nwstring)
 
-matree = open(parsenewick, Phylo.path("C:/Users/jeppe/OneDrive/Documenten/Bioinformatics/Tweede master/Master Thesis/Assembly_Theory/GEMs/data/phylogeny/tree.nwk"))
+matree = open(parsenewick, Phylo.path("C:/Users/jeppe/OneDrive/Documenten/Bioinformatics/Tweede master/Master Thesis/Assembly_Theory/GEMs/data/phylogeny/tree_Q$(Q1)_Q$(Q2).nwk"))
 default(linecolor = :black, size = (400, 400))
 Plots.plot(matree, size = (800, 1200), showtips = true)
-
-# using Clustering
-
-# function hclust_to_newick(tree::Clustering.Hclust, labels::Vector{String})
-#     n = length(labels)
-
-#     function recurse(node::Int)
-#         if node < 0
-#             return labels[-node]
-#         else
-#             l = tree.merge[node, 1]
-#             r = tree.merge[node, 2]
-#             return "(" * recurse(l) * "," * recurse(r) * ")"
-#         end
-#     end
-
-#     # There are n-1 merges, so the final node is at index n-1
-#     return recurse(n - 1) * ";"
-# end
-
-# ctree = hclust(d)
-
-# newick_str = hclust_to_newick(ctree, labels)
