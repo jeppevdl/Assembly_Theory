@@ -5,7 +5,7 @@ using Pkg
 # using Catalyst, ModelingToolkit, DifferentialEquations
 
 if basename(pwd()) != "src"
-    cd("C:/Users/jeppe/OneDrive/Documenten/Bioinformatics/Tweede master/Master Thesis/Assembly_Theory/GEMs/src")
+    cd(@__DIR__)
 end
 Pkg.activate(".")
 
@@ -384,8 +384,11 @@ for pathway in pathway_list
         q3_ma = quantile(collect(values(unique_cpds)), 0.75)
         stats["q3_ma"] = q3_ma
 
-        h1 = histogram([value["DIFF"] for value in values(rn_ma) if !isnan(value["DIFF"])], dpi = 600, size = (800,600), legend=false, xlabel = "MA difference between input and output", ylabel = "Frequency", title = "Distribution of MA difference between input and output for $pathway", alpha = 0.75, color = :blue);
+        h1 = histogram([value["DIFF"] for value in values(rn_ma) if !isnan(value["DIFF"])], 
+        dpi = 600, size = (800,600), legend=false, xlabel = "MA difference between input and output", ylabel = "Frequency", 
+        title = "Distribution of MA difference between input and output for $pathway", alpha = 0.75, color = :blue);
         savefig(h1, "../figures/pathway_diff_dist/$(pathway)_diff.png")
+        
         h2 = histogram(collect(values(unique_cpds)), dpi = 600, size = (800,600), legend=false, xlabel = "MA value", ylabel = "Frequency", title = "Distribution of MA values for $pathway", alpha = 0.75, color = :red)
         savefig(h2, "../figures/pathway_ma_dist/$(pathway)_ma.png")
         

@@ -99,7 +99,7 @@ complexities = DataFrame(id=String[], n_atoms=Dict{Symbol,Int}[], hybr=Vector{In
 		end
 	end
 end
-@info "Calculated complexity values for $(nrow(complexities)) compounds out of $(length(all_ma.cpd))"
+@info "Calculated complexity values for $(nrow(complexities)) compounds out of $(length(all_ma[all_ma.ma .!= "na", :]))"
 
 #---------------------------------------------------------------------------------------------------------------------------------
 
@@ -138,6 +138,9 @@ complexities.sp = count_hybr(complexities)[1]
 complexities.sp2 = count_hybr(complexities)[2]
 complexities.sp3 = count_hybr(complexities)[3]
 
+complexities.sp_perc = complexities.sp ./ (complexities.counted_atoms)
+complexities.sp2_perc = complexities.sp2 ./ (complexities.counted_atoms)
+complexities.sp3_perc = complexities.sp3 ./ (complexities.counted_atoms)
 # Sort by complexity
 sort!(complexities, [:ma, :counted_atoms, :sp3, :sp2, :sp, :counted_rings], rev=true)
 @info "Done sorting compounds based on complexity"

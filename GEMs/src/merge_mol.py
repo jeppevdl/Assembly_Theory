@@ -3,7 +3,7 @@ from rdkit.Chem import rdmolfiles
 import pandas as pd
 import os
 
-os.chdir("C:\\Users\\jeppe\\OneDrive\\Documenten\\Bioinformatics\\Tweede master\\Master Thesis\\Assembly_Theory\\GEMs")
+os.chdir("GEMs")
 
 aa = pd.read_csv("data/amino_acids.csv")
 
@@ -25,3 +25,40 @@ for i in range(len(aa)):
 
         with open("combined_aa/{}_{}.mol".format(sym1, sym2), "w") as f:
             f.write(combined_block)
+
+# attempt to combine all the cpds in the lookup file
+
+# os.chdir("..\\..\\kegg-small\\data\\lookup")
+
+# my_file = open("oyw.lookup_latest.txt", "r")
+# data = my_file.read()
+# data_into_list = data.replace('\n', ' ').split(" ")
+# my_file.close()
+
+# cpds = [cpd[4:] for cpd in data_into_list if cpd[0:4] == "cpd:"]
+
+# os.chdir("..\\..\\..\\assembly_go\\molfiles")
+
+# mol1 = Chem.MolFromMolFile("{}.mol".format(cpds[0]), sanitize=False)
+# mol2 = Chem.MolFromMolFile("{}.mol".format(cpds[1]), sanitize=False)
+
+# combined = Chem.CombineMols(mol1, mol2)
+# editable = Chem.EditableMol(Chem.Mol(combined))
+
+# for i in range(2, len(cpds)):
+#     print(i)
+#     mol_path = "{}.mol".format(cpds[i])
+#     if os.path.isfile(mol_path):
+#         print(mol_path)
+#         mol = Chem.MolFromMolFile(mol_path, sanitize=False)
+#         if mol is None:
+#             continue
+#         combined = Chem.CombineMols(editable.GetMol(), mol)
+#         editable = Chem.EditableMol(Chem.Mol(combined))
+
+# final_combined = editable.GetMol()
+# Chem.SanitizeMol(final_combined)
+# combined_block = Chem.MolToMolBlock(final_combined, forceV3000=False)
+
+# with open("combined_org/{}.mol".format("oyw"), "w") as f:
+#     f.write(combined_block)

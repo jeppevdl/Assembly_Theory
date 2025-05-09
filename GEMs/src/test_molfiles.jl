@@ -1,9 +1,11 @@
 using Pkg
 if basename(pwd()) != "src"
-    cd("C:\\Users\\jeppe\\OneDrive\\Documenten\\Bioinformatics\\Tweede master\\Master Thesis\\Assembly_Theory\\GEMs\\src")
+    cd(@__DIR__)
 end
 Pkg.activate(".")
-using Glob
+using Glob, ProgressMeter
+
+# CHECK IF MOLFILES IN A DIRECTORY ARE NAMED CORRECTLY AND ASSIGNED TO THE CORRECT ENTRY ID
 
 # Function to extract the entry ID from the <ENTRY> tag
 function extract_entry_id(filepath::String)
@@ -21,11 +23,11 @@ end
 mismatches = []
 function check_molfile_entries(directory::String)
     mol_files = Glob.glob("C*.mol", directory)
-    for filepath in mol_files
-        filename = split(basename(filepath), ".")[1]  # Extract filename (e.g., "C00001")
+    @showprogress for filepath in mol_files
+        filename = split(basename(filepath), ".")[1]
         entry_id = extract_entry_id(filepath)
         if entry_id === nothing
-            println("No <ENTRY> tag found in $filepath")
+            println("\nNo <ENTRY> tag found in $filepath")
         elseif filename != entry_id
             push!(mismatches, (filename, entry_id))
             println("Mismatch in $filepath: filename = $filename, <ENTRY> = $entry_id")
@@ -33,10 +35,11 @@ function check_molfile_entries(directory::String)
     end
 end
 
-# Run the check (replace "." with your directory if needed)
-molfile_dir = "C:\\Users\\jeppe\\OneDrive\\Documenten\\Bioinformatics\\Tweede master\\Master Thesis\\Assembly_Theory\\GEMs\\bin\\assembly_go\\molfiles"
+# Run the check
+molfile_dir = "..\\bin\\assembly_go\\molfiles"
 check_molfile_entries(molfile_dir)
 
+# code below to get the mismatched files from KEGG
 using KEGGAPI
 function KEGGAPI.kegg_get(query::Vector{String}, option::String, retries::Int)
 	i = 0
@@ -54,7 +57,6 @@ function KEGGAPI.kegg_get(query::Vector{String}, option::String, retries::Int)
 	end
 end
 
-using ProgressMeter
 input = ["cpd:"*m[1] for m in mismatches]
 allmol = Dict{String,Union{Missing,String}}()
 @showprogress for batch in collect(Iterators.partition(input, 1))
@@ -72,10 +74,10 @@ end
 @showprogress for (cpd, mol) in allmol
     if mol !== missing
         id = split(cpd, ":")[2]
-        open("C:/Users/jeppe/OneDrive/Documenten/Bioinformatics/Tweede master/Master Thesis/Assembly_Theory/GEMs/data/molfiles/$id.mol", "w") do f
+        open("../data/molfiles/$id.mol", "w") do f
             write(f, mol)
         end
-        open("C:/Users/jeppe/OneDrive/Documenten/Bioinformatics/Tweede master/Master Thesis/Assembly_Theory/GEMs/bin/assembly_go/molfiles/$id.mol", "w") do f
+        open("../bin/assembly_go/molfiles/$id.mol", "w") do f
             write(f, mol)
         end
     end
@@ -85,6 +87,6 @@ deletes = [cpd for cpd in input if !haskey(allmol, cpd)]
 for cpd in deletes
     id = split(cpd, ":")[2]
     #remove file
-    rm("C:/Users/jeppe/OneDrive/Documenten/Bioinformatics/Tweede master/Master Thesis/Assembly_Theory/GEMs/data/molfiles/$id.mol")
-    rm("C:/Users/jeppe/OneDrive/Documenten/Bioinformatics/Tweede master/Master Thesis/Assembly_Theory/GEMs/bin/assembly_go/molfiles/$id.mol")
+    rm("../data/molfiles/$id.mol")
+    rm("../bin/assembly_go/molfiles/$id.mol")
 end
