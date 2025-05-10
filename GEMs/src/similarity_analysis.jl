@@ -105,6 +105,7 @@ end
 # nwstring = newickstring(njclusts, labels; labelinternalnodes=true)
 # write("../data/phylogeny/aa_tree_nj.nw", nwstring)
 
+using BasicTreePlots
 aa_tree = readnw(String(read("../data/phylogeny/aa_$method.nw")))
 
 # Build mapping dictionaries

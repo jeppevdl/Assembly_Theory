@@ -260,6 +260,7 @@ end
 # Plot the distance matrix as a heatmap----------------------------------------------------------------------------------------------------------------------
 Q1 = lower_quantile * 100 |> Int
 Q2 = upper_quantile * 100 |> Int
+
 hm = Figure(size=(800,600));
 ax = Axis(hm[1,1], title="Heatmap of MA distance matrix: MA distribution between percentile $Q1 and $Q2", xlabel="Organisms", ylabel="Organisms",
 yticks=(1:length(organisms), organisms), xticklabelsvisible=false, xticksvisible=false, yticklabelsize=7, titlesize=17)
@@ -375,16 +376,149 @@ f
 CairoMakie.save("../figures/mst_plot_Q$(Q1)_Q$(Q2).png", f, px_per_unit=5)
 
 # Tree construction----------------------------------------------------------------------------------------------------------------------
-njclusts = regNJ(d)
-# njclustsfast = fastNJ(d)
+tiplabels = organisms
 
-labels = organisms
+using Clustering, NewickTreeTools
 
-# nwstring = newickstring(njclusts, labels)
-nwstring = newickstring(njclusts, labels; labelinternalnodes=true)
+# Perform WPGMA (average linkage)
+hc = hclust(d, linkage=:average)
 
-write("../data/phylogeny/tree_Q$(Q1)_Q$(Q2).nwk", nwstring)
+open("../data/phylogeny/tree_Q$(Q1)_Q$(Q2).nw", "w") do io
+    tree = NewickTreeTools.newick(hc, names=tiplabels)
+    write(io, nwstr(tree) * "\n")
+end
 
-matree = open(parsenewick, Phylo.path("../data/phylogeny/tree_Q$(Q1)_Q$(Q2).nwk"))
-default(linecolor = :black, size = (400, 400))
-Plots.plot(matree, size = (800, 1200), showtips = true)
+using BasicTreePlots
+org_tree = readnw(String(read("../data/phylogeny/tree_Q$(Q1)_Q$(Q2).nw")))
+taxonomy = organism_df
+org2tax = map(eachrow(taxonomy)) do r
+	(r.Organism => Dict(
+		"Superkingdom" => r.Superkingdom,
+		"Kingdom" => r.Kingdom,
+		"Genus" => r.Genus,
+		"Phylum" => r.Phylum,
+		"Species" => r.Species,
+	))
+end |> Dict
+
+specie2tax(s,tax = :Kingdom) = Dict(map(eachrow(taxonomy[!, [:Organism, :Superkingdom, :Kingdom, :Phylum, :Genus]])) do r
+    r.Organism => r[tax]
+end)[s]
+
+function to_category(value, reference)
+	mapper = enumerate(sort(unique(reference))) |> x -> reverse.(x) |> Dict
+	mapper[value]
+end
+
+function to_category(values::Vector{String})
+	map(values) do v
+		to_category(v, values)
+	end
+end
+
+function generate_colors(v)
+	distinguishable_colors(
+		length(unique(v)),
+		RGB(1,1,1);
+		dropseed=true,
+		lchoices = range(0, stop=95, length=15),
+	)
+end
+
+layoutstyle = :cladogram
+f1 = Figure(size=(800,1200));
+f1a1 = Axis(f1[1,1:3], xautolimitmargin = (0.1, 0.7), xtrimspine = true)
+
+
+# Get tip positions
+leaves_xy, leaves_names = BasicTreePlots.nodepositions(
+    org_tree,
+    layoutstyle=layoutstyle,
+) |> BasicTreePlots.tipannotations
+
+# Specie to taxonomic rank
+leaves_tax = specie2tax.(leaves_names)
+leaves_color = map(x -> to_category(x, leaves_tax), leaves_tax)
+colores = generate_colors(leaves_tax);
+
+# Add tree
+treeplot!(
+    f1a1,
+    org_tree,
+    layoutstyle=layoutstyle,
+    tipannotationsvisible=false,
+    openangle=deg2rad(10)
+)
+
+# Add dots with Domain
+CairoMakie.scatter!(
+    f1a1,
+    leaves_xy,
+    color = leaves_color,
+    colormap = colores
+
+)
+
+# Add labels colored by Phylum
+max_depth = first(argmax(first, leaves_xy))
+for (i, (xy, name)) in enumerate(collect(zip(leaves_xy, leaves_names)))
+    text!(
+        max_depth,
+        last(xy);
+        text=name*" * "*org2tax[name]["Species"],
+        color=colores[leaves_color[i]],
+        fontsize=9,
+        align = (:left, :center),
+        offset = (50.0f0, 0.0f0)
+    )
+end
+
+for (i,tax) in enumerate([:Superkingdom, :Kingdom])
+    coords = [(max_depth*(1 + i/30), y) for (_,y)in leaves_xy]
+    colors = to_category(String.(specie2tax.(leaves_names, tax)))
+    CairoMakie.scatter!(
+        f1a1,
+        coords,
+        color = colors,
+        colormap = generate_colors(colors),
+        marker=:rect,
+        markersize=14
+    )
+end
+
+
+for (i,tax) in enumerate([:Superkingdom, :Kingdom])
+    uniquetax = unique(String.(specie2tax.(leaves_names, tax)))
+    colors = to_category(uniquetax)
+    cmap = generate_colors(colors)
+
+    Legend(f1[2,i],
+        [
+            MarkerElement(
+                color = cmap[colors[i]],
+                marker = :rect,
+                markersize = 25,
+            )
+            for i in eachindex(uniquetax)
+        ],
+        uniquetax,
+        String("KEGG Tax\nLevel $i"),
+        nbanks=i,
+        rowgap=1,
+        #labelsize=8, 
+        unique=true, merge=true
+    )
+end
+
+
+# Customization
+hideydecorations!(f1a1)
+hidespines!(f1a1, :r, :l, :t)
+f1a1.xticks = range(0, trunc(max_depth;sigdigits=1), 3)
+CairoMakie.ylims!(f1a1, (-1, last(argmax(last, leaves_xy))+1))
+
+rowsize!(f1.layout, 2, Relative(1/5))
+
+f1
+
+save("../figures/organism_comparison/tree_Q$(Q1)_Q$(Q2).png", f1; px_per_unit=5)

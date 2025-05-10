@@ -1,15 +1,10 @@
 using Pkg
-
-# cd("C:/Users/jeppe/OneDrive/Documenten/Bioinformatics/Tweede master/Master Thesis/Assembly_Theory/AT_exploration/")
-# Pkg.activate(".")
-# using Catalyst, ModelingToolkit, DifferentialEquations
-
 if basename(pwd()) != "src"
     cd(@__DIR__)
 end
 Pkg.activate(".")
 
-using JSON3, KEGGAPI, ProgressMeter, DataFrames, CSV, Plots, StatsPlots, Statistics, CairoMakie
+using JSON3, KEGGAPI, ProgressMeter, DataFrames, CSV, StatsPlots, Statistics, CairoMakie
 
 # function for gathering KEGG information
 function KEGGAPI.kegg_get(query::Vector{String}, option::String, retries::Int)
@@ -74,11 +69,13 @@ stats_dict = Dict{String, Dict{String, Any}}()
 unique_cpd_dict = Dict{String, Dict{String, Int}}()
 rclass_dict = Dict{String, Dict{String, Dict{String, Any}}}()
 
-all_ma_values = Float64[]
-all_ma_groups = String[]
+origin_df = DataFrame(origin = unique(pathway_metadata.origin), vals = [[] for _ in 1:length(unique(pathway_metadata.origin))],
+    diff = [[] for _ in 1:length(unique(pathway_metadata.origin))])
 
-all_diff_values = Float64[]
-all_diff_groups = String[]
+super_df = DataFrame(super_pathway = unique(pathway_metadata.super_pathway), vals = [[] for _ in 1:length(unique(pathway_metadata.super_pathway))],
+    diff = [[] for _ in 1:length(unique(pathway_metadata.super_pathway))])
+
+colors = palette(:seaborn_colorblind);
 
 for pathway in pathway_list
     @info "Processing pathway $pathway"
@@ -267,7 +264,7 @@ for pathway in pathway_list
         ma_in = []
         ma_out = []
 
-        # gather MA values for input and output compounds and add to unique compounds dictionary
+        # gather MA values for input and output compounds that belong to main pairs and add to unique compounds dictionary
         for cpd_in in ins 
             if cpd_in in main_cpds
                 if cpd_in in MAs.cpd
@@ -339,6 +336,8 @@ for pathway in pathway_list
     stats["origin"] = pathway_metadata.origin[pathway_metadata.id .== pathway][1]
     stats["super_pathway"] = pathway_metadata.super_pathway[pathway_metadata.id .== pathway][1]
 
+    pw_name = pathway_metadata.name[pathway_metadata.id .== pathway][1]
+
     # calculate statistics for the pathway, make histograms and boxplot data based on grouping
     if length(rn_ma) != 0 && !(pathway in skipped_pathways) # skip certain pathways
         mean_diff = mean([value["DIFF"] for value in values(rn_ma) if !isnan(value["DIFF"])])
@@ -384,24 +383,30 @@ for pathway in pathway_list
         q3_ma = quantile(collect(values(unique_cpds)), 0.75)
         stats["q3_ma"] = q3_ma
 
-        h1 = histogram([value["DIFF"] for value in values(rn_ma) if !isnan(value["DIFF"])], 
-        dpi = 600, size = (800,600), legend=false, xlabel = "MA difference between input and output", ylabel = "Frequency", 
-        title = "Distribution of MA difference between input and output for $pathway", alpha = 0.75, color = :blue);
-        savefig(h1, "../figures/pathway_diff_dist/$(pathway)_diff.png")
+        h1 = Figure(size = (800, 600));
+        ax1 = Axis(h1[1, 1], xlabel = "Absolute MA difference between input and output", ylabel = "Frequency", 
+        title = "Distribution of MA difference between input and output for reactions in $pw_name")
+        CairoMakie.hist!(ax1, [value["DIFF"] for value in values(rn_ma) if !isnan(value["DIFF"])],
+        color = colors[1])
+        CairoMakie.save("../figures/pathway_diff_dist/$(pathway)_diff.png", h1, px_per_unit=5)
         
-        h2 = histogram(collect(values(unique_cpds)), dpi = 600, size = (800,600), legend=false, xlabel = "MA value", ylabel = "Frequency", title = "Distribution of MA values for $pathway", alpha = 0.75, color = :red)
-        savefig(h2, "../figures/pathway_ma_dist/$(pathway)_ma.png")
+        h2 = Figure(size = (800, 600));
+        ax2 = Axis(h2[1, 1], xlabel = "MA", ylabel = "Frequency", title = "Distribution of MA values for $pw_name")
+        CairoMakie.hist!(ax2, collect(values(unique_cpds)), color = colors[2])
+        CairoMakie.save("../figures/pathway_ma_dist/$(pathway)_ma.png", h2, px_per_unit=5)
         
         ma_bp_data = collect(values(unique_cpds))
         diff_bp_data = [abs(value["DIFF"]) for value in values(rn_ma) if !isnan(value["DIFF"])]
 
-        group_label = pathway_metadata.origin[pathway_metadata.id .== pathway][1]
+        group_label_origin = pathway_metadata.origin[pathway_metadata.id .== pathway][1]
+        group_label_super = pathway_metadata.super_pathway[pathway_metadata.id .== pathway][1]
 
-        append!(all_ma_values, ma_bp_data)
-        append!(all_ma_groups, fill(group_label, length(ma_bp_data)))
+        append!(origin_df[!, :vals][origin_df.origin .== group_label_origin][1], ma_bp_data)
+        append!(origin_df[!, :diff][origin_df.origin .== group_label_origin][1], diff_bp_data)
 
-        append!(all_diff_values, diff_bp_data)
-        append!(all_diff_groups, fill(group_label, length(diff_bp_data)))
+        append!(super_df[!, :vals][super_df.super_pathway .== group_label_super][1], ma_bp_data)
+        append!(super_df[!, :diff][super_df.super_pathway .== group_label_super][1], diff_bp_data)
+
     end
     stats_dict[pathway] = stats
 end
@@ -410,14 +415,92 @@ end
 CSV.write("../data/reactions/pathway_stats.csv", stats_dict)
 CSV.write("../data/reactions/pathway_cpd_stats.csv", unique_cpd_dict)
 
-# Create boxplots for all pathways
-ma_bp = Plots.boxplot(all_ma_groups, all_ma_values; dpi = 600, size = (800,800),xlabel = "Pathway lineage of origin", ylabel = "MA value", 
-    title = "Distribution of MA values for all pathways", alpha = 0.75, legend = false, xticks = :auto, xrotation = 45)
-savefig(ma_bp, "../figures/pathway_ma_dist/boxplot_ma_grouped.png")
+# boxplots and histograms grouped by origin
+ma_bp_origin = Figure(size = (800,600));
+ax1 = Axis(ma_bp_origin[1,1], title="MA values for all pathways grouped by pathway origin", xlabel="Pathway origin", ylabel="MA", width=600, xticklabelsvisible=false)
+i=1
+for row in eachrow(origin_df)
+    ma_values = row.vals
+    CairoMakie.boxplot!(ax1, i*ones(length(ma_values)), ma_values; color = colors[i], label=row.origin, width=0.5)
+    n = length(ma_values)
+    CairoMakie.text!(ax1, i, -4, text = "n=$n", align = (:center, :bottom), color = :black)
 
-diff_bp = Plots.boxplot(all_diff_groups, all_diff_values; dpi = 600, size = (800,800), xlabel = "Pathway lineage of origin", ylabel = "MA difference",
-    title = "Distribution of MA differences for all pathways", alpha = 0.75, legend = false, xticks = :auto, xrotation = 45)
-savefig(diff_bp, "../figures/pathway_diff_dist/boxplot_diff_grouped.png")
+    histo = Figure(size=(800,600));
+    ax = Axis(histo[1, 1], xlabel = "MA", ylabel = "Frequency", title = "Distribution of MA values for all pathways in $(row.origin) origin")
+    CairoMakie.hist!(ax, ma_values, color = colors[i])
+    CairoMakie.save("../figures/pathway_ma_dist/origin/$(row.origin)_ma.png", histo, px_per_unit=5)
+    i += 1
+end
+
+CairoMakie.Legend(ma_bp_origin[1,2], ax1, "Pathway origin")
+ma_bp_origin
+
+CairoMakie.save("../figures/pathway_ma_dist/origin/MA_boxplot_origin.png", ma_bp_origin, px_per_unit=5)
+
+diff_bp_origin = Figure(size = (800,600));
+ax2 = Axis(diff_bp_origin[1,1], title="Absolute differences in MA between compound pairs in pathway reactions grouped by pathway origin", xlabel="Pathway origin", ylabel="Absolute MA difference", width=600, xticklabelsvisible=false)
+i=1
+for row in eachrow(origin_df)
+    diff_values = row.diff
+    CairoMakie.boxplot!(ax2, i*ones(length(diff_values)), diff_values; color = colors[i], label=row.origin, width=0.5)
+    n = length(diff_values)
+    CairoMakie.text!(ax2, i, -2, text = "n=$n", align = (:center, :bottom), color = :black)
+
+    histo = Figure(size=(800,600));
+    ax = Axis(histo[1, 1], xlabel = "Absolute MA difference", ylabel = "Frequency", title = "Distribution of absolute MA differences for all pathway reactions in $(row.origin) origin")
+    CairoMakie.hist!(ax, diff_values, color = colors[i])
+    CairoMakie.save("../figures/pathway_diff_dist/origin/$(row.origin)_diff.png", histo, px_per_unit=5)
+    i += 1
+end
+
+CairoMakie.Legend(diff_bp_origin[1,2], ax2, "Pathway origin")
+diff_bp_origin
+
+CairoMakie.save("../figures/pathway_diff_dist/origin/diff_boxplot_origin.png", diff_bp_origin, px_per_unit=5)
+
+# boxplots and histograms grouped by super pathway (leave out glycans)
+super_df = super_df[super_df.super_pathway .!= "Glycan biosynthesis & metabolism", :]
+ma_bp_super = Figure(size = (1000,800));
+ax3 = Axis(ma_bp_super[1,1], title="MA values for all pathways grouped by super pathway", xlabel="Super pathway", ylabel="MA", width=600, xticklabelsvisible=false)
+i=1
+for row in eachrow(super_df)
+    ma_values = row.vals
+    CairoMakie.boxplot!(ax3, i*ones(length(ma_values)), ma_values; color = colors[i], label=row.super_pathway, width=0.5)
+    n = length(ma_values)
+    CairoMakie.text!(ax3, i, -2, text = "n=$n", align = (:center, :bottom), color = :black)
+
+    histo = Figure(size=(800,600));
+    ax = Axis(histo[1, 1], xlabel = "MA", ylabel = "Frequency", title = "Distribution of MA values for all pathways in $(row.super_pathway)")
+    CairoMakie.hist!(ax, ma_values, color = colors[i])
+    CairoMakie.save("../figures/pathway_ma_dist/super_pathway/$(row.super_pathway)_ma.png", histo, px_per_unit=5)
+    i += 1
+end
+
+CairoMakie.Legend(ma_bp_super[1,2], ax3, "Super pathway")
+ma_bp_super
+
+CairoMakie.save("../figures/pathway_ma_dist/super_pathway/MA_boxplot_super.png", ma_bp_super, px_per_unit=5)
+
+diff_bp_super = Figure(size = (1000,800));
+ax4 = Axis(diff_bp_super[1,1], title="Absolute differences in MA between compound pairs in pathway reactions grouped by super pathway", xlabel="Super pathway", ylabel="Absolute MA difference", width=600, xticklabelsvisible=false)
+i=1
+for row in eachrow(super_df)
+    diff_values = row.diff
+    CairoMakie.boxplot!(ax4, i*ones(length(diff_values)), diff_values; color = colors[i], label=row.super_pathway, width=0.5)
+    n = length(diff_values)
+    CairoMakie.text!(ax4, i, -2, text = "n=$n", align = (:center, :bottom), color = :black)
+
+    histo = Figure(size=(800,600));
+    ax = Axis(histo[1, 1], xlabel = "Absolute MA difference", ylabel = "Frequency", title = "Distribution of absolute MA differences for all pathway reactions in $(row.super_pathway)")
+    CairoMakie.hist!(ax, diff_values, color = colors[i])
+    CairoMakie.save("../figures/pathway_diff_dist/super_pathway/$(row.super_pathway)_diff.png", histo, px_per_unit=5)
+    i += 1
+end
+
+CairoMakie.Legend(diff_bp_super[1,2], ax4, "Super pathway")
+diff_bp_super
+
+CairoMakie.save("../figures/pathway_diff_dist/super_pathway/diff_boxplot_super.png", diff_bp_super, px_per_unit=5)
 
 # Create bubble chart for reaction classes
 function count_unique_ec_classes(pairs)
@@ -426,7 +509,7 @@ function count_unique_ec_classes(pairs)
         if haskey(pairinfo, "ENZYME")
             enz = pairinfo["ENZYME"]
             if !(ismissing(enz) || isnan(enz))
-                push!(ec_classes, Int(enz))  # assume EC class already as int
+                push!(ec_classes, Int(enz))
             end
         end
     end
@@ -434,84 +517,56 @@ function count_unique_ec_classes(pairs)
 end
 
 # Collect data
-x_vals = Int[]
+x_vals = Float64[]
 y_vals = Float64[]
 sizes = Float64[]
 colors = Int[]
 labels = String[]
 
-for (rclass, pairs) in rclass_dict
-    diffs = [abs(pairinfo["DIFF"]) for pairinfo in values(pairs)]
-    push!(x_vals, length(diffs))
-    push!(y_vals, median(diffs))
+for (rclass, pair_dict) in rclass_dict
+    diffs = [abs(pairinfo["DIFF"]) for pairinfo in values(pair_dict)]
+    mas = vcat([pairinfo["MA"] for pairinfo in values(pair_dict)]...)
+    push!(x_vals, median(diffs))
+    push!(y_vals, median(mas))
     push!(sizes, iqr(diffs))
-    push!(colors, count_unique_ec_classes(pairs))
+    push!(colors, length(diffs))
     push!(labels, rclass)
 end
 
-# Scale sizes for visibility
-scaled_sizes = 10 .+ 2 .* sizes
+scaled_sizes = sizes
+log_colors = log10.(sizes .+ 1)
 
-# Create plot
 f = Figure(size = (900, 650));
 ax = Axis(f[1, 1],
-    xlabel = "log10(Number of compound pairs)",
-    ylabel = "Median abs(MA difference)",
+    xlabel = "Median abs(MA difference)",
+    ylabel = "Median MA",
     title = "Reaction Class Bubble Chart"
 )
 
-# Color map
 CairoMakie.scatter!(
-    ax, log10.(x_vals), y_vals;
+    ax, x_vals, y_vals;
     markersize = scaled_sizes,
-    color = colors,
-    colormap = :Spectral_5,
-    colorrange = (minimum(colors), maximum(colors)),
+    color = log_colors,
+    colormap = :viridis,
+    colorrange = (minimum(log_colors), maximum(log_colors)),
     transparency = true
 )
 
-Colorbar(f[1, 2], limits = (minimum(colors), maximum(colors)), colormap = :Spectral_5, label = "Unique EC classes")
+Colorbar(f[1, 2],
+    limits = (minimum(log_colors), maximum(log_colors)),
+    colormap = :viridis,
+    label = "log₁₀(Compound pairs + 1)"
+)
 
-for (i, label) in enumerate(labels)
-    if scaled_sizes[i] > 40 || x_vals[i] > 30
-        text!(ax, log10(x_vals[i]), y_vals[i];
-              text = label,
-              align = (:center, :bottom),
-              fontsize = 10,
-              color = :black)
+for (x, y, size, label, color) in zip(x_vals, y_vals, sizes, labels, log_colors)
+    if (x > 15 || y > 35) && size >= 0 && color > 0.77
+        CairoMakie.text!(ax, string(label), position = (x, y), align = (:left, :center), fontsize = 10)
     end
 end
 
 f
 
-save("../figures/reaction_class_bubble_chart.png", f)
-
-# rclass_dict_sorted = sort(collect(rclass_dict), by = x -> length(x[2]), rev = true)
-
-# rclass_ma_plot_data = Dict{String, Vector{Float64}}()
-# rc_bp_ma = plot(legend = false, dpi = 600, size = (800,800), xlabel = "RCLASS", ylabel = "MA value", title = "Distribution of MA values for all RCLASSes", alpha = 0.75);
-# rclass_diff_plot_data = Dict{String, Vector{Int}}()
-# rc_bp_diff = plot(legend = false, dpi = 600, size = (800,800), xlabel = "RCLASS", ylabel = "MA difference", title = "Distribution of MA differences for all RCLASSes", alpha = 0.75);
-# for i in 1:10
-#     entry = rclass_dict_sorted[i]
-#     class = entry[1]
-#     data = rclass_dict[class]
-#     for pair in keys(data)
-#         ma_vals = data[pair]["MA"]
-#         diff_val = data[pair]["DIFF"]
-#         if haskey(rclass_ma_plot_data, class)
-#             append!(rclass_ma_plot_data[class], ma_vals)
-#             append!(rclass_diff_plot_data[class], diff_val)
-#         else
-#             rclass_ma_plot_data[class] = ma_vals
-#             rclass_diff_plot_data[class] = [diff_val]
-#         end
-#     end
-#     boxplot!(rc_bp_ma, rclass_ma_plot_data[class])
-#     boxplot!(rc_bp_diff, rclass_diff_plot_data[class])
-# end
-# rc_bp_ma
-# rc_bp_diff
+CairoMakie.save("../figures/reaction_class_bubble_chart.png", f, px_per_unit=5)
 
 allmissing = []
 for element in missingma
@@ -526,26 +581,6 @@ for element in missingma
     end
 end
 println(allmissing)
-
-# group rn_ma by "ENZYME"
-# rn_ma_grouped = Dict{String, Vector{Dict{String, Any}}}()
-# for entry in keys(rn_ma)
-#     data = rn_ma[entry]
-#     if haskey(rn_ma_grouped, string(data["ENZYME"]))
-#         push!(rn_ma_grouped[string(data["ENZYME"])], data)
-#     else
-#         rn_ma_grouped[string(data["ENZYME"])] = [data]
-#     end
-# end
-
-# ecdata = rn_ma_grouped["4"]
-# ecvector = []
-# for entry in ecdata
-#     push!(ecvector, entry["DIFF"])
-# end
-# ecvector = [element for element in ecvector if !isnan(element)]
-# density(ecvector)
-
 
 # all_in = Set(all_in)
 # all_out = Set(all_out)

@@ -1,82 +1,82 @@
-id,origin,super_pathway
-"map00630","Pre-eukaryotic","Carbohydrate metabolism"
-"map00052","Pre-eukaryotic","Carbohydrate metabolism"
-"map00051","Pre-eukaryotic","Carbohydrate metabolism"
-"map00030","Pre-eukaryotic","Carbohydrate metabolism"
-"map00530","Pre-eukaryotic","Carbohydrate metabolism"
-"map00620","Pre-eukaryotic","Carbohydrate metabolism"
-"map00650","Pre-eukaryotic","Carbohydrate metabolism"
-"map00010","Pre-eukaryotic","Carbohydrate metabolism"
-"map00500","Pre-eukaryotic","Carbohydrate metabolism"
-"map00020","Pre-eukaryotic","Carbohydrate metabolism"
-"map00920","Pre-eukaryotic","Energy metabolism"
-"map00190","Pre-eukaryotic","Energy metabolism"
-"map00910","Pre-eukaryotic","Energy metabolism"
-"map00680","Pre-eukaryotic","Energy metabolism"
-"map00100","Pre-eukaryotic","Lipid metabolism"
-"map00071","Pre-eukaryotic","Lipid metabolism"
-"map00591","Pre-eukaryotic","Lipid metabolism"
-"map00561","Pre-eukaryotic","Lipid metabolism"
-"map00564","Pre-eukaryotic","Lipid metabolism"
-"map00565","Pre-eukaryotic","Lipid metabolism"
-"map00061","Pre-eukaryotic","Lipid metabolism"
-"map00230","Pre-eukaryotic","Nucleotide metabolism"
-"map00240","Pre-eukaryotic","Nucleotide metabolism"
-"map00270","Pre-eukaryotic","Amino acid metabolism"
-"map00271","Pre-eukaryotic","Amino acid metabolism"
-"map00340","Pre-eukaryotic","Amino acid metabolism"
-"map00330","Pre-eukaryotic","Amino acid metabolism"
-"map00300","Pre-eukaryotic","Amino acid metabolism"
-"map00220","Pre-eukaryotic","Amino acid metabolism"
-"map00280","Pre-eukaryotic","Amino acid metabolism"
-"map00380","Pre-eukaryotic","Amino acid metabolism"
-"map00272","Pre-eukaryotic","Amino acid metabolism"
-"map00360","Pre-eukaryotic","Amino acid metabolism"
-"map00260","Pre-eukaryotic","Amino acid metabolism"
-"map00480","Pre-eukaryotic","Metabolism of other amino acids"
-"map00450","Pre-eukaryotic","Metabolism of other amino acids"
-"map00510","Pre-eukaryotic","Glycan biosynthesis & metabolism"
-"map00750","Pre-eukaryotic","Metabolism of cofactors & vitamins"
-"map00790","Pre-eukaryotic","Metabolism of cofactors & vitamins"
-"map00740","Pre-eukaryotic","Metabolism of cofactors & vitamins"
-"map00780","Pre-eukaryotic","Metabolism of cofactors & vitamins"
-"map00860","Pre-eukaryotic","Metabolism of cofactors & vitamins"
-"map00760","Pre-eukaryotic","Metabolism of cofactors & vitamins"
-"map00670","Pre-eukaryotic","Metabolism of cofactors & vitamins"
-"map00770","Pre-eukaryotic","Metabolism of cofactors & vitamins"
-"map00562","Eukaryotic","Carbohydrate metabolism"
-"map00031","Eukaryotic","Carbohydrate metabolism"
-"map00140","Eukaryotic","Lipid metabolism"
-"map00150","Eukaryotic","Lipid metabolism"
-"map00590","Eukaryotic","Lipid metabolism"
-"map00062","Eukaryotic","Lipid metabolism"
-"map00600","Eukaryotic","Lipid metabolism"
-"map00120","Eukaryotic","Lipid metabolism"
-"map00252","Eukaryotic","Amino acid metabolism"
-"map00250","Eukaryotic","Amino acid metabolism"
-"map00350","Eukaryotic","Amino acid metabolism"
-"map01030","Eukaryotic","Glycan biosynthesis & metabolism"
-"map00563","Eukaryotic","Glycan biosynthesis & metabolism"
-"map00830","Eukaryotic","Metabolism of cofactors & vitamins"
-"map00980","Eukaryotic","Xenobiotics biodegradation & metabolism"
-"map00430","Metazoan","Metabolism of other amino acids"
-"map00534","Metazoan","Glycan biosynthesis & metabolism"
-"map00520","Vertebrate","Carbohydrate metabolism"
-"map00040","Vertebrate","Carbohydrate metabolism"
-"map00640","Vertebrate","Carbohydrate metabolism"
-"map00300","Vertebrate","Amino acid metabolism"
-"map00360","Vertebrate","Amino acid metabolism"
-"map00410","Vertebrate","Metabolism of other amino acids"
-"map01032","Vertebrate","Glycan biosynthesis & metabolism"
-"map00603","Vertebrate","Glycan biosynthesis & metabolism"
-"map00531","Vertebrate","Glycan biosynthesis & metabolism"
-"map00601","Vertebrate","Glycan biosynthesis & metabolism"
-"map00533","Vertebrate","Glycan biosynthesis & metabolism"
-"map00602","Vertebrate","Glycan biosynthesis & metabolism"
-"map01031","Vertebrate","Glycan biosynthesis & metabolism"
-"map00512","Vertebrate","Glycan biosynthesis & metabolism"
-"map00604","Vertebrate","Glycan biosynthesis & metabolism"
-"map00532","Vertebrate","Glycan biosynthesis & metabolism"
-"map00903","Vertebrate","Biosynthesis of secondary metabolites"
-"map00902","Vertebrate","Biosynthesis of secondary metabolites"
-"map00361","Vertebrate","Xenobiotics biodegradation & metabolism"
+id,origin,super_pathway,name
+map00630,Pre-eukaryotic,Carbohydrate metabolism,Glyoxylate and dicarboxylate metabolism
+map00052,Pre-eukaryotic,Carbohydrate metabolism,Galactose metabolism
+map00051,Pre-eukaryotic,Carbohydrate metabolism,Fructose and mannose metabolism
+map00030,Pre-eukaryotic,Carbohydrate metabolism,Pentose phosphate pathway
+map00530,Pre-eukaryotic,Carbohydrate metabolism,
+map00620,Pre-eukaryotic,Carbohydrate metabolism,Pyruvate metabolism
+map00650,Pre-eukaryotic,Carbohydrate metabolism,Butanoate metabolism
+map00010,Pre-eukaryotic,Carbohydrate metabolism,Glycolysis / Gluconeogenesis
+map00500,Pre-eukaryotic,Carbohydrate metabolism,Starch and sucrose metabolism
+map00020,Pre-eukaryotic,Carbohydrate metabolism,Citrate cycle (TCA cycle)
+map00920,Pre-eukaryotic,Energy metabolism,Sulfur metabolism
+map00190,Pre-eukaryotic,Energy metabolism,Oxidative phosphorylation
+map00910,Pre-eukaryotic,Energy metabolism,Nitrogen metabolism
+map00680,Pre-eukaryotic,Energy metabolism,Methane metabolism
+map00100,Pre-eukaryotic,Lipid metabolism,Steroid biosynthesis
+map00071,Pre-eukaryotic,Lipid metabolism,Fatty acid degradation
+map00591,Pre-eukaryotic,Lipid metabolism,Linoleic acid metabolism
+map00561,Pre-eukaryotic,Lipid metabolism,Glycerolipid metabolism
+map00564,Pre-eukaryotic,Lipid metabolism,Glycerophospholipid metabolism
+map00565,Pre-eukaryotic,Lipid metabolism,Ether lipid metabolism
+map00061,Pre-eukaryotic,Lipid metabolism,Fatty acid biosynthesis
+map00230,Pre-eukaryotic,Nucleotide metabolism,Purine metabolism
+map00240,Pre-eukaryotic,Nucleotide metabolism,Pyrimidine metabolism
+map00270,Pre-eukaryotic,Amino acid metabolism,Cysteine and methionine metabolism
+map00271,Pre-eukaryotic,Amino acid metabolism,
+map00340,Pre-eukaryotic,Amino acid metabolism,Histidine metabolism
+map00330,Pre-eukaryotic,Amino acid metabolism,Arginine and proline metabolism
+map00300,Pre-eukaryotic,Amino acid metabolism,Lysine biosynthesis
+map00220,Pre-eukaryotic,Amino acid metabolism,Arginine biosynthesis
+map00280,Pre-eukaryotic,Amino acid metabolism,"Valine, leucine and isoleucine degradation"
+map00380,Pre-eukaryotic,Amino acid metabolism,Tryptophan metabolism
+map00272,Pre-eukaryotic,Amino acid metabolism,
+map00360,Pre-eukaryotic,Amino acid metabolism,Phenylalanine metabolism
+map00260,Pre-eukaryotic,Amino acid metabolism,"Glycine, serine and threonine metabolism"
+map00480,Pre-eukaryotic,Metabolism of other amino acids,Glutathione metabolism
+map00450,Pre-eukaryotic,Metabolism of other amino acids,Selenocompound metabolism
+map00510,Pre-eukaryotic,Glycan biosynthesis & metabolism,N-Glycan biosynthesis
+map00750,Pre-eukaryotic,Metabolism of cofactors & vitamins,Vitamin B6 metabolism
+map00790,Pre-eukaryotic,Metabolism of cofactors & vitamins,Folate biosynthesis
+map00740,Pre-eukaryotic,Metabolism of cofactors & vitamins,Riboflavin metabolism
+map00780,Pre-eukaryotic,Metabolism of cofactors & vitamins,Biotin metabolism
+map00860,Pre-eukaryotic,Metabolism of cofactors & vitamins,Porphyrin metabolism
+map00760,Pre-eukaryotic,Metabolism of cofactors & vitamins,Nicotinate and nicotinamide metabolism
+map00670,Pre-eukaryotic,Metabolism of cofactors & vitamins,One carbon pool by folate
+map00770,Pre-eukaryotic,Metabolism of cofactors & vitamins,Pantothenate and CoA biosynthesis
+map00562,Eukaryotic,Carbohydrate metabolism,Inositol phosphate metabolism
+map00031,Eukaryotic,Carbohydrate metabolism,
+map00140,Eukaryotic,Lipid metabolism,Steroid hormone biosynthesis
+map00150,Eukaryotic,Lipid metabolism,
+map00590,Eukaryotic,Lipid metabolism,Arachidonic acid metabolism
+map00062,Eukaryotic,Lipid metabolism,Fatty acid elongation
+map00600,Eukaryotic,Lipid metabolism,Sphingolipid metabolism
+map00120,Eukaryotic,Lipid metabolism,Primary bile acid biosynthesis
+map00252,Eukaryotic,Amino acid metabolism,
+map00250,Eukaryotic,Amino acid metabolism,"Alanine, aspartate and glutamate metabolism"
+map00350,Eukaryotic,Amino acid metabolism,Tyrosine metabolism
+map01030,Eukaryotic,Glycan biosynthesis & metabolism,
+map00563,Eukaryotic,Glycan biosynthesis & metabolism,Glycosylphosphatidylinositol (GPI)-anchor biosynthesis
+map00830,Eukaryotic,Metabolism of cofactors & vitamins,Retinol metabolism
+map00980,Eukaryotic,Xenobiotics biodegradation & metabolism,Metabolism of xenobiotics by cytochrome P450
+map00430,Metazoan,Metabolism of other amino acids,Taurine and hypotaurine metabolism
+map00534,Metazoan,Glycan biosynthesis & metabolism,Glycosaminoglycan biosynthesis - heparan sulfate / heparin
+map00520,Vertebrate,Carbohydrate metabolism,Amino sugar and nucleotide sugar metabolism
+map00040,Vertebrate,Carbohydrate metabolism,Pentose and glucuronate interconversions
+map00640,Vertebrate,Carbohydrate metabolism,Propanoate metabolism
+map00300,Vertebrate,Amino acid metabolism,Lysine biosynthesis
+map00360,Vertebrate,Amino acid metabolism,Phenylalanine metabolism
+map00410,Vertebrate,Metabolism of other amino acids,beta-Alanine metabolism
+map01032,Vertebrate,Glycan biosynthesis & metabolism,
+map00603,Vertebrate,Glycan biosynthesis & metabolism,Glycosphingolipid biosynthesis - globo and isoglobo series
+map00531,Vertebrate,Glycan biosynthesis & metabolism,Glycosaminoglycan degradation
+map00601,Vertebrate,Glycan biosynthesis & metabolism,Glycosphingolipid biosynthesis - lacto and neolacto series
+map00533,Vertebrate,Glycan biosynthesis & metabolism,Glycosaminoglycan biosynthesis - keratan sulfate
+map00602,Vertebrate,Glycan biosynthesis & metabolism,
+map01031,Vertebrate,Glycan biosynthesis & metabolism,
+map00512,Vertebrate,Glycan biosynthesis & metabolism,Mucin type O-glycan biosynthesis
+map00604,Vertebrate,Glycan biosynthesis & metabolism,Glycosphingolipid biosynthesis - ganglio series
+map00532,Vertebrate,Glycan biosynthesis & metabolism,Glycosaminoglycan biosynthesis - chondroitin sulfate / dermatan sulfate
+map00903,Vertebrate,Biosynthesis of secondary metabolites,Limonene degradation
+map00902,Vertebrate,Biosynthesis of secondary metabolites,Monoterpenoid biosynthesis
+map00361,Vertebrate,Xenobiotics biodegradation & metabolism,Chlorocyclohexane and chlorobenzene degradation
