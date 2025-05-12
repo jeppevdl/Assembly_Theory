@@ -138,6 +138,9 @@ for (kingdom, cpds) in kingdom_cpds
             ma_val = all_MAs[all_MAs.cpd .== cpd, :].ma[1]
             if !isnan(ma_val)
                 push!(kingdom_ma_values[kingdom], ma_val)
+                if ma_val > 100 && kingdom == "Bacteria"
+                    println("$cpd: $ma_val")
+                end
             end
         end
     end
@@ -186,6 +189,9 @@ for (superkingdom, cpds) in superkingdom_cpds
             ma_val = all_MAs[all_MAs.cpd .== cpd, :].ma[1]
             if !isnan(ma_val)
                 push!(superkingdom_ma_values[superkingdom], ma_val)
+                if ma_val > 100 && superkingdom == "Prokaryotes"
+                    println("$cpd: $ma_val")
+                end
             end
         end
     end
@@ -210,8 +216,8 @@ CairoMakie.save("../figures/organism_comparison/superkingdom_MA_boxplot.png", fi
 # Preallocate the distance matrix----------------------------------------------------------------------------------------------------------------------
 d = zeros(length(organisms), length(organisms))
 
-# Set to desired quantiles
-lower_quantile = 0
+# Set to desired quantiles (e.g. lower percentile 90 = Q90 => lower_quantile = 0.9)
+lower_quantile = 0.75
 upper_quantile = 1
 
 # Calculate the Wasserstein distance between the MA distributions between the quantiles of each pair of organisms
@@ -273,7 +279,7 @@ hm, px_per_unit=5)
 CSV.write("../data/phylogeny/MA_distance_matrix_Q$(Q1)_Q$(Q2).csv", Tables.table(d))
 
 # Scale the distance matrix-------------------------------------------------------------------------------------------------------------
-d_scaled = (d .- mean(d)) ./ std(d)
+# d_scaled = (d .- mean(d)) ./ std(d)
 d_minmax = (d .- minimum(d)) ./ (maximum(d) - minimum(d))  # scale to [0, 1]
 
 # Make an MDS plot----------------------------------------------------------------------------------------------------------------------
@@ -298,7 +304,7 @@ CairoMakie.scatter!(ax, protists[1, :], protists[2, :], color = palet[5], label 
 CairoMakie.scatter!(ax, archaea[1, :], archaea[2, :], color = palet[9], label = "Archaea")
 Legend(mdsplot[1, 2], ax, "Kingdoms", tellwidth = false)
 mdsplot
-CairoMakie.save("../figures/mds_plot_Q$(Q1)_Q$(Q2).png", mdsplot, px_per_unit=5)
+CairoMakie.save("../figures/organism_comparison/mds_plot_Q$(Q1)_Q$(Q2).png", mdsplot, px_per_unit=5)
 
 # Make a UMAP plot---------------------------------------------------------------------------------------------------------------------- 
 using Random
@@ -323,7 +329,7 @@ CairoMakie.scatter!(ax, archaea[1, :], archaea[2, :], color = palet[9], label = 
 Legend(umapplot[1, 2], ax, "Kingdoms", tellwidth = false)
 umapplot
 
-CairoMakie.save("../figures/umap_plot_Q$(Q1)_Q$(Q2).png", umapplot, px_per_unit=5)
+CairoMakie.save("../figures/organism_comparison/umap_plot_Q$(Q1)_Q$(Q2).png", umapplot, px_per_unit=5)
 
 # Make a t-SNE plot----------------------------------------------------------------------------------------------------------------------
 tsne_embedding = tsne(d_minmax, 2, 0, 50000, 80; distance=true)
@@ -346,7 +352,7 @@ CairoMakie.scatter!(ax, protists[1, :], protists[2, :], color = palet[5], label 
 CairoMakie.scatter!(ax, archaea[1, :], archaea[2, :], color = palet[9], label = "Archaea")
 Legend(tsneplot[1, 2], ax, "Kingdoms", tellwidth = false)
 tsneplot
-CairoMakie.save("../figures/tsne_plot_Q$(Q1)_Q$(Q2).png", tsneplot, px_per_unit=5)
+CairoMakie.save("../figures/organism_comparison/tsne_plot_Q$(Q1)_Q$(Q2).png", tsneplot, px_per_unit=5)
 
 # Minimum Spanning Tree----------------------------------------------------------------------------------------------------------------------
 using Graphs
@@ -362,25 +368,25 @@ palet = palette(:seaborn_colorblind);
 colors = Dict("Animals" => palet[1], "Plants" => palet[2], "Fungi" => palet[3],
               "Bacteria" => palet[4], "Protists" => palet[5], "Archaea" => palet[9])
 
-
 node_color = [colors[k] for k in organism_df.Kingdom];
 
 f = Figure(size=(800, 600));
-ax = Axis(f[1, 1], title = "MST", width = 600)
-graphplot!(ax, M; node_color=node_color, node_size=10, layout = Stress())
+ax = Axis(f[1, 1], title = "MST: MA distribution between Q$Q1 and Q$Q2", width = 600)
+graphplot!(ax, M; node_color=node_color, node_size=10, layout=Stress(), nlabels = organisms, nlabels_fontsize=10)
+
 legend_handles = [CairoMakie.scatter!(ax, [NaN], [NaN]; color=colors[k], label=k) for k in kingdoms]
 Legend(f[1, 2], ax, "Kingdoms"; tellwidth=false)
 
 f
 
-CairoMakie.save("../figures/mst_plot_Q$(Q1)_Q$(Q2).png", f, px_per_unit=5)
+CairoMakie.save("../figures/organism_comparison/mst_plot_Q$(Q1)_Q$(Q2).png", f, px_per_unit=5)
 
 # Tree construction----------------------------------------------------------------------------------------------------------------------
 tiplabels = organisms
 
 using Clustering, NewickTreeTools
 
-# Perform WPGMA (average linkage)
+# Perform UPGMA (average linkage)
 hc = hclust(d, linkage=:average)
 
 open("../data/phylogeny/tree_Q$(Q1)_Q$(Q2).nw", "w") do io
@@ -427,7 +433,7 @@ end
 
 layoutstyle = :cladogram
 f1 = Figure(size=(800,1200));
-f1a1 = Axis(f1[1,1:3], xautolimitmargin = (0.1, 0.7), xtrimspine = true)
+f1a1 = Axis(f1[1,1:3], xautolimitmargin = (0.1, 0.7), xtrimspine = true, title = "Hierarchical clustering tree: MA distributions between Q$Q1 and Q$Q2")
 
 
 # Get tip positions
