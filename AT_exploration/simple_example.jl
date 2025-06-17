@@ -1,7 +1,8 @@
 using Pkg
 if basename(pwd()) != "AT_exploration"
-    cd("C:/Users/jeppe/OneDrive/Documenten/Bioinformatics/Tweede master/Master Thesis/Assembly_Theory/AT_exploration")
+    cd("AT_exploration")
 end
+
 using Catalyst, OrdinaryDiffEq, Plots, GraphRecipes, JumpProcesses, DataFrames, Statistics
 #functions--------------------------------------------------------------------------------
 
@@ -98,7 +99,10 @@ upper_bound = 7
 rate = 1
 selection_rate = 100
 degradation_rate = 0.1
+
+#set to "" for no selection
 selection_target = ""
+
 upregulated = [["B(t)", "A(t)"], ["N(t)", "A(t)"], ["NA(t)", "NA(t)"], ["BA(t)", "NANA(t)"]]
 t = default_t()
 
@@ -137,7 +141,7 @@ for (i, len) in enumerate(unique(sol_lengths))
 end
 
 display(p)
-savefig(p, "fig/simple_example_length.png")
+savefig(p, "fig/single_run/simple_example_length.png")
 
 #Plot by assembly index
 p_ai = plot(title = "Sum of Variables by Assembly Index", xlabel = "Time", ylabel = "Sum", dpi = 600);
@@ -152,7 +156,7 @@ for (i, ai) in enumerate(unique(sol_ai))
 end
 
 display(p_ai)
-savefig(p_ai, "fig/simple_example_ai.png")
+savefig(p_ai, "fig/single_run/simple_example_ai.png")
 
 #Plot assembly through time
 assembly_vec= []
@@ -171,7 +175,7 @@ end
 p_a = plot(title = "Assembly Through Time", xlabel = "Time", ylabel = "Assembly", dpi = 600, legend=false);
 plot!(p_a, sol.t, assembly_vec);
 display(p_a)
-# savefig(p_a, "AT_exploration/fig/simple_example_assembly_selection.png")
+savefig(p_a, "fig/single_run/simple_example_assembly.png")
 
 target_idx = [i for (i, sp) in enumerate(species_strings) if sp == "BANANA"][1]
 target_vec = []
@@ -182,4 +186,4 @@ end
 p_t = plot(title = "Target Species Through Time", xlabel = "Time", ylabel = "Target Species", dpi = 600, legend=false);
 plot!(p_t, sol.t[1:length(sol.t)], target_vec);
 display(p_t)
-# savefig(p_t, "AT_exploration/fig/simple_example_target_selection.png")
+savefig(p_t, "fig/single_run/simple_example_target.png")

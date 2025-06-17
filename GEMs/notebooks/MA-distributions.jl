@@ -79,7 +79,7 @@ begin
 end
 
 # ╔═╡ 3e007d4a-87f3-4626-9614-9472ff2165a3
-save("../figures/eu_vs_pro.png", fig; px_per_unit=5)
+save("../figures/organism_comparison/eu_vs_pro.png", fig; px_per_unit=5)
 
 # ╔═╡ 6a70b41c-d36d-4175-846c-42f68a78a8af
 begin
@@ -103,7 +103,7 @@ begin
 end
 
 # ╔═╡ d24d12f7-3d45-44b1-a090-bd7b00c02477
-save("../figures/kingdom.png", fig2; px_per_unit=5)
+save("../figures/organism_comparison/kingdom.png", fig2; px_per_unit=5)
 
 # ╔═╡ ec649d38-7bdc-44cf-b5c8-71098df3b21e
 begin

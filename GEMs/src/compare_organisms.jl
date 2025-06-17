@@ -35,7 +35,7 @@ all_MAs.ma = parse.(Int64, all_MAs.ma)
 
 # Make histogram of all MA values----------------------------------------------------------------------------------------------------------------------
 allhist = Figure();
-allhist[1,1] = Axis(allhist, title="MA values for all gathered compounds", xlabel="MA", ylabel="Frequency", xticks=0:10:maximum(all_MAs.ma))
+allhist[1,1] = Axis(allhist, title="MA values for all gathered compounds", xlabel="MA", ylabel="Frequency", xticks=0:10:ceil(maximum(all_MAs.ma)/10)*10)
 hist!(allhist[1,1], all_MAs.ma, bins=75, color = palette(:seaborn_colorblind)[1])
 allhist;
 CairoMakie.save("../figures/all_MA_hist/all_MA_histogram_makie.png", allhist, px_per_unit=5)
@@ -103,7 +103,8 @@ missing_ma = []
     end
     
     histo = Figure();
-    histo[1,1] = Axis(histo, title="MA values for $name", xlabel="MA", ylabel="Frequency", xticks=0:10:maximum([ma for ma in cpd_df.ma if !isnan(ma)]))
+    histo[1,1] = Axis(histo, title="MA values for $name", xlabel="MA", ylabel="Frequency", xticks=0:10:ceil(maximum([ma for ma in cpd_df.ma if !isnan(ma)])/10)*10,
+    titlesize=20, xlabelsize=17, ylabelsize=17, xticklabelsize=14, yticklabelsize=14)
     hist!(histo[1,1], [ma for ma in cpd_df.ma if !isnan(ma)], bins=40, color = palette(:seaborn_colorblind)[2])
     histo
     CairoMakie.save("../figures/organisms_MA_hist/makie_MA_histogram_$organism.png", histo, px_per_unit=5)
@@ -152,8 +153,10 @@ ax = Axis(fig[1, 1], title="MA Value Distributions by Kingdom (Unique Compounds)
 
 base_colors = palette(:seaborn_colorblind);
 i = 1
+medians = []
 for (kingdom, ma_values) in sort(collect(kingdom_ma_values))
     CairoMakie.boxplot!(ax, i*ones(length(ma_values)), ma_values; color = base_colors[i], label=kingdom, width=0.5)
+    push!(medians, median(ma_values))
     i += 1
 end
 
@@ -161,7 +164,7 @@ CairoMakie.Legend(fig[1,2], ax, "Kingdoms")
 fig
 
 CairoMakie.save("../figures/organism_comparison/kingdom_MA_boxplot.png", fig, px_per_unit=5)
-
+CSV.write("../figures/organism_comparison/kingdom_MA_medians.csv", DataFrame(kingdom=sort(collect(keys(kingdom_ma_values))), median=medians); header=true)
 
 # Make histogram of all unique MA values per superkingdom----------------------------------------------------------------------------------------------------------------------
 # Dictionary to collect unique compound -> MA per superkingdom
@@ -203,8 +206,10 @@ ax = Axis(fig[1, 1], title="MA Value Distributions by Superkingdom (Unique Compo
 
 base_colors = palette(:seaborn_colorblind)[9:10];
 i = 1
+medians = []
 for (superkingdom, ma_values) in sort(collect(superkingdom_ma_values))
     CairoMakie.boxplot!(ax, i*ones(length(ma_values)), ma_values; color = base_colors[i], label=superkingdom, width=0.5)
+    push!(medians, median(ma_values))
     i += 1
 end
 
@@ -212,12 +217,13 @@ CairoMakie.Legend(fig[1,2], ax, "Superkingdoms")
 fig
 
 CairoMakie.save("../figures/organism_comparison/superkingdom_MA_boxplot.png", fig, px_per_unit=5)
+CSV.write("../figures/organism_comparison/superkingdom_MA_medians.csv", DataFrame(superkingdom=sort(collect(keys(superkingdom_ma_values))), median=medians); header=true)
 
 # Preallocate the distance matrix----------------------------------------------------------------------------------------------------------------------
 d = zeros(length(organisms), length(organisms))
 
 # Set to desired quantiles (e.g. lower percentile 90 = Q90 => lower_quantile = 0.9)
-lower_quantile = 0.75
+lower_quantile = 0
 upper_quantile = 1
 
 # Calculate the Wasserstein distance between the MA distributions between the quantiles of each pair of organisms
@@ -395,57 +401,53 @@ open("../data/phylogeny/tree_Q$(Q1)_Q$(Q2).nw", "w") do io
 end
 
 using BasicTreePlots
+
+# Read tree and taxonomy
 org_tree = readnw(String(read("../data/phylogeny/tree_Q$(Q1)_Q$(Q2).nw")))
 taxonomy = organism_df
 org2tax = map(eachrow(taxonomy)) do r
-	(r.Organism => Dict(
-		"Superkingdom" => r.Superkingdom,
-		"Kingdom" => r.Kingdom,
-		"Genus" => r.Genus,
-		"Phylum" => r.Phylum,
-		"Species" => r.Species,
-	))
+    (r.Organism => Dict(
+        "Superkingdom" => r.Superkingdom,
+        "Kingdom" => r.Kingdom,
+        "Genus" => r.Genus,
+        "Phylum" => r.Phylum,
+        "Species" => r.Species,
+    ))
 end |> Dict
 
-specie2tax(s,tax = :Kingdom) = Dict(map(eachrow(taxonomy[!, [:Organism, :Superkingdom, :Kingdom, :Phylum, :Genus]])) do r
+# Utility functions
+specie2tax(s, tax = :Kingdom) = Dict(map(eachrow(taxonomy[!, [:Organism, :Superkingdom, :Kingdom, :Phylum, :Genus]])) do r
     r.Organism => r[tax]
 end)[s]
 
-function to_category(value, reference)
-	mapper = enumerate(sort(unique(reference))) |> x -> reverse.(x) |> Dict
-	mapper[value]
-end
-
 function to_category(values::Vector{String})
-	map(values) do v
-		to_category(v, values)
-	end
+    labels = sort(unique(values))
+    mapper = Dict(zip(labels, 1:length(labels)))
+    return map(v -> mapper[v], values), labels
 end
 
-function generate_colors(v)
-	distinguishable_colors(
-		length(unique(v)),
-		RGB(1,1,1);
-		dropseed=true,
-		lchoices = range(0, stop=95, length=15),
-	)
+function generate_colors(n)
+    distinguishable_colors(n, RGB(1,1,1); dropseed=true, lchoices=range(0, stop=95, length=15))
 end
 
+# Plot setup
 layoutstyle = :cladogram
-f1 = Figure(size=(800,1200));
-f1a1 = Axis(f1[1,1:3], xautolimitmargin = (0.1, 0.7), xtrimspine = true, title = "Hierarchical clustering tree: MA distributions between Q$Q1 and Q$Q2")
+f1 = Figure(size=(800,1200))
+f1a1 = Axis(f1[1,1:3], xautolimitmargin = (0.1, 0.7), xtrimspine = true,
+    title = "Hierarchical clustering tree: MA distributions between Q$Q1 and Q$Q2")
 
+# Tree layout and tip names
+leaves_xy, leaves_names = BasicTreePlots.nodepositions(org_tree, layoutstyle=layoutstyle) |> BasicTreePlots.tipannotations
 
-# Get tip positions
-leaves_xy, leaves_names = BasicTreePlots.nodepositions(
-    org_tree,
-    layoutstyle=layoutstyle,
-) |> BasicTreePlots.tipannotations
+# Assign Kingdom-based colors
+kingdoms = String.(specie2tax.(leaves_names, :Kingdom))
+kingdom_cat, kingdom_labels = to_category(kingdoms)
+kingdom_colors = generate_colors(length(kingdom_labels))
 
-# Specie to taxonomic rank
-leaves_tax = specie2tax.(leaves_names)
-leaves_color = map(x -> to_category(x, leaves_tax), leaves_tax)
-colores = generate_colors(leaves_tax);
+# Assign Superkingdom-based colors (ensuring they do not overlap with Kingdom colors)
+superkingdoms = String.(specie2tax.(leaves_names, :Superkingdom))
+superkingdom_cat, superkingdom_labels = to_category(superkingdoms)
+superkingdom_colors = generate_colors(length(superkingdom_labels) + length(kingdom_labels))[end-length(superkingdom_labels)+1:end]
 
 # Add tree
 treeplot!(
@@ -456,75 +458,66 @@ treeplot!(
     openangle=deg2rad(10)
 )
 
-# Add dots with Domain
+# Plot colored dots by Kingdom (main color)
 CairoMakie.scatter!(
     f1a1,
     leaves_xy,
-    color = leaves_color,
-    colormap = colores
-
+    color = kingdom_cat,
+    colormap = kingdom_colors
 )
 
-# Add labels colored by Phylum
+# Add labels with Kingdom-based colors
 max_depth = first(argmax(first, leaves_xy))
-for (i, (xy, name)) in enumerate(collect(zip(leaves_xy, leaves_names)))
+for (i, (xy, name)) in enumerate(zip(leaves_xy, leaves_names))
     text!(
         max_depth,
         last(xy);
         text=name*" * "*org2tax[name]["Species"],
-        color=colores[leaves_color[i]],
+        color=kingdom_colors[kingdom_cat[i]],
         fontsize=9,
         align = (:left, :center),
         offset = (50.0f0, 0.0f0)
     )
 end
 
-for (i,tax) in enumerate([:Superkingdom, :Kingdom])
-    coords = [(max_depth*(1 + i/30), y) for (_,y)in leaves_xy]
-    colors = to_category(String.(specie2tax.(leaves_names, tax)))
+# Add Superkingdom and Kingdom bars with correct coloring
+for (i, (tax, cats, labels, colormap)) in enumerate([
+        (:Superkingdom, superkingdom_cat, superkingdom_labels, superkingdom_colors),
+        (:Kingdom, kingdom_cat, kingdom_labels, kingdom_colors),
+    ])
+    coords = [(max_depth * (1 + i / 30), y) for (_, y) in leaves_xy]
     CairoMakie.scatter!(
         f1a1,
         coords,
-        color = colors,
-        colormap = generate_colors(colors),
-        marker=:rect,
-        markersize=14
+        color = cats,
+        colormap = colormap,
+        marker = :rect,
+        markersize = 14
     )
-end
-
-
-for (i,tax) in enumerate([:Superkingdom, :Kingdom])
-    uniquetax = unique(String.(specie2tax.(leaves_names, tax)))
-    colors = to_category(uniquetax)
-    cmap = generate_colors(colors)
 
     Legend(f1[2,i],
         [
             MarkerElement(
-                color = cmap[colors[i]],
+                color = colormap[j],
                 marker = :rect,
-                markersize = 25,
-            )
-            for i in eachindex(uniquetax)
+                markersize = 25
+            ) for j in 1:length(labels)
         ],
-        uniquetax,
-        String("KEGG Tax\nLevel $i"),
-        nbanks=i,
-        rowgap=1,
-        #labelsize=8, 
-        unique=true, merge=true
+        labels,
+        "KEGG Tax\nLevel $i",
+        nbanks = i,
+        rowgap = 1,
+        unique = true,
+        merge = true
     )
 end
 
-
-# Customization
+# Final plot cleanup
 hideydecorations!(f1a1)
 hidespines!(f1a1, :r, :l, :t)
 f1a1.xticks = range(0, trunc(max_depth;sigdigits=1), 3)
-CairoMakie.ylims!(f1a1, (-1, last(argmax(last, leaves_xy))+1))
-
+CairoMakie.ylims!(f1a1, (-1, last(argmax(last, leaves_xy)) + 1))
 rowsize!(f1.layout, 2, Relative(1/5))
-
 f1
 
-save("../figures/organism_comparison/tree_Q$(Q1)_Q$(Q2).png", f1; px_per_unit=5)
+CairoMakie.save("../figures/organism_comparison/tree_Q$(Q1)_Q$(Q2).png", f1; px_per_unit=5)

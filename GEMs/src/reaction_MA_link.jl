@@ -326,7 +326,7 @@ for pathway in pathway_list
     end
     
     push!(missingma, no_ma)
-
+    CSV.write("../data/reactions/rn_ma_stats/rn_stats_$pathway.csv", rn_ma)
     unique_cpd_dict[pathway] = unique_cpds
 
     stats["num_reactions"] = num_reactions
@@ -401,6 +401,15 @@ for pathway in pathway_list
         group_label_origin = pathway_metadata.origin[pathway_metadata.id .== pathway][1]
         group_label_super = pathway_metadata.super_pathway[pathway_metadata.id .== pathway][1]
 
+        # if group_label_super == "Metabolism of cofactors & vitamins"
+        #     #print compound entries with ma larger than 59 from unique_cpds
+        #     for (cpd, ma) in unique_cpds
+        #         if ma > 59
+        #             println("Compound $cpd has MA $ma")
+        #         end
+        #     end
+        # end
+
         append!(origin_df[!, :vals][origin_df.origin .== group_label_origin][1], ma_bp_data)
         append!(origin_df[!, :diff][origin_df.origin .== group_label_origin][1], diff_bp_data)
 
@@ -414,16 +423,19 @@ end
 # save stats to CSV
 CSV.write("../data/reactions/pathway_stats.csv", stats_dict)
 CSV.write("../data/reactions/pathway_cpd_stats.csv", unique_cpd_dict)
+CSV.write("../data/reactions/rclass_stats.csv", rclass_dict)
 
 # boxplots and histograms grouped by origin
 ma_bp_origin = Figure(size = (800,600));
 ax1 = Axis(ma_bp_origin[1,1], title="MA values for all pathways grouped by pathway origin", xlabel="Pathway origin", ylabel="MA", width=600, xticklabelsvisible=false)
 i=1
+medians = []
 for row in eachrow(origin_df)
     ma_values = row.vals
     CairoMakie.boxplot!(ax1, i*ones(length(ma_values)), ma_values; color = colors[i], label=row.origin, width=0.5)
     n = length(ma_values)
     CairoMakie.text!(ax1, i, -4, text = "n=$n", align = (:center, :bottom), color = :black)
+    push!(medians, median(ma_values))
 
     histo = Figure(size=(800,600));
     ax = Axis(histo[1, 1], xlabel = "MA", ylabel = "Frequency", title = "Distribution of MA values for all pathways in $(row.origin) origin")
@@ -436,15 +448,18 @@ CairoMakie.Legend(ma_bp_origin[1,2], ax1, "Pathway origin")
 ma_bp_origin
 
 CairoMakie.save("../figures/pathway_ma_dist/origin/MA_boxplot_origin.png", ma_bp_origin, px_per_unit=5)
+CSV.write(("../figures/pathway_ma_dist/origin/MA_medians.csv"), DataFrame(origin = origin_df.origin, median = medians))
 
 diff_bp_origin = Figure(size = (800,600));
 ax2 = Axis(diff_bp_origin[1,1], title="Absolute differences in MA between compound pairs in pathway reactions grouped by pathway origin", xlabel="Pathway origin", ylabel="Absolute MA difference", width=600, xticklabelsvisible=false)
 i=1
+medians = []
 for row in eachrow(origin_df)
     diff_values = row.diff
     CairoMakie.boxplot!(ax2, i*ones(length(diff_values)), diff_values; color = colors[i], label=row.origin, width=0.5)
     n = length(diff_values)
     CairoMakie.text!(ax2, i, -2, text = "n=$n", align = (:center, :bottom), color = :black)
+    push!(medians, median(diff_values))
 
     histo = Figure(size=(800,600));
     ax = Axis(histo[1, 1], xlabel = "Absolute MA difference", ylabel = "Frequency", title = "Distribution of absolute MA differences for all pathway reactions in $(row.origin) origin")
@@ -457,17 +472,20 @@ CairoMakie.Legend(diff_bp_origin[1,2], ax2, "Pathway origin")
 diff_bp_origin
 
 CairoMakie.save("../figures/pathway_diff_dist/origin/diff_boxplot_origin.png", diff_bp_origin, px_per_unit=5)
+CSV.write(("../figures/pathway_diff_dist/origin/diff_medians.csv"), DataFrame(origin = origin_df.origin, median = medians))
 
 # boxplots and histograms grouped by super pathway (leave out glycans)
 super_df = super_df[super_df.super_pathway .!= "Glycan biosynthesis & metabolism", :]
 ma_bp_super = Figure(size = (1000,800));
 ax3 = Axis(ma_bp_super[1,1], title="MA values for all pathways grouped by super pathway", xlabel="Super pathway", ylabel="MA", width=600, xticklabelsvisible=false)
 i=1
+medians = []
 for row in eachrow(super_df)
     ma_values = row.vals
     CairoMakie.boxplot!(ax3, i*ones(length(ma_values)), ma_values; color = colors[i], label=row.super_pathway, width=0.5)
     n = length(ma_values)
     CairoMakie.text!(ax3, i, -2, text = "n=$n", align = (:center, :bottom), color = :black)
+    push!(medians, median(ma_values))
 
     histo = Figure(size=(800,600));
     ax = Axis(histo[1, 1], xlabel = "MA", ylabel = "Frequency", title = "Distribution of MA values for all pathways in $(row.super_pathway)")
@@ -480,15 +498,18 @@ CairoMakie.Legend(ma_bp_super[1,2], ax3, "Super pathway")
 ma_bp_super
 
 CairoMakie.save("../figures/pathway_ma_dist/super_pathway/MA_boxplot_super.png", ma_bp_super, px_per_unit=5)
+CSV.write(("../figures/pathway_ma_dist/super_pathway/MA_medians.csv"), DataFrame(super_pathway = super_df.super_pathway, median = medians))
 
 diff_bp_super = Figure(size = (1000,800));
 ax4 = Axis(diff_bp_super[1,1], title="Absolute differences in MA between compound pairs in pathway reactions grouped by super pathway", xlabel="Super pathway", ylabel="Absolute MA difference", width=600, xticklabelsvisible=false)
 i=1
+medians = []
 for row in eachrow(super_df)
     diff_values = row.diff
     CairoMakie.boxplot!(ax4, i*ones(length(diff_values)), diff_values; color = colors[i], label=row.super_pathway, width=0.5)
     n = length(diff_values)
     CairoMakie.text!(ax4, i, -2, text = "n=$n", align = (:center, :bottom), color = :black)
+    push!(medians, median(diff_values))
 
     histo = Figure(size=(800,600));
     ax = Axis(histo[1, 1], xlabel = "Absolute MA difference", ylabel = "Frequency", title = "Distribution of absolute MA differences for all pathway reactions in $(row.super_pathway)")
@@ -501,6 +522,7 @@ CairoMakie.Legend(diff_bp_super[1,2], ax4, "Super pathway")
 diff_bp_super
 
 CairoMakie.save("../figures/pathway_diff_dist/super_pathway/diff_boxplot_super.png", diff_bp_super, px_per_unit=5)
+CSV.write(("../figures/pathway_diff_dist/super_pathway/diff_medians.csv"), DataFrame(super_pathway = super_df.super_pathway, median = medians))
 
 # Create bubble chart for reaction classes
 function count_unique_ec_classes(pairs)
@@ -534,7 +556,7 @@ for (rclass, pair_dict) in rclass_dict
 end
 
 scaled_sizes = sizes
-log_colors = log10.(sizes .+ 1)
+log_colors = log10.(colors .+ 1)
 
 f = Figure(size = (900, 650));
 ax = Axis(f[1, 1],
@@ -559,28 +581,98 @@ Colorbar(f[1, 2],
 )
 
 for (x, y, size, label, color) in zip(x_vals, y_vals, sizes, labels, log_colors)
-    if (x > 15 || y > 35) && size >= 0 && color > 0.77
+    if color >= log10(6) && (x > 15 || y > 35)
         CairoMakie.text!(ax, string(label), position = (x, y), align = (:left, :center), fontsize = 10)
     end
 end
 
 f
 
-CairoMakie.save("../figures/reaction_class_bubble_chart.png", f, px_per_unit=5)
+CairoMakie.save("../figures/reaction_analysis/reaction_class_bubble_chart.png", f, px_per_unit=5)
 
-allmissing = []
-for element in missingma
-    if length(element) > 0
-        for cpd in element
-            if cpd in allmissing
-                continue
-            else
-                push!(allmissing, cpd)
+#study enzyme classes
+class_names = ["Oxidoreductases", "Transferases", "Hydrolases", "Lyases", "Isomerases", "Ligases", "Translocases"]
+ec_info = DataFrame(id = 1:7, name = class_names, all_ma = [[] for _ in 1:7], mean_ma = [[] for _ in 1:7], diff = [[] for _ in 1:7], num_pairs = zeros(7))
+for (class, pair_dict) in rclass_dict
+    for (pair, pair_info) in pair_dict
+        if haskey(pair_info, "ENZYME")
+            ec = pair_info["ENZYME"]
+            if !isnan(ec)
+                append!(ec_info[ec_info.id .== ec, "all_ma"][1], pair_info["MA"])
+                append!(ec_info[ec_info.id .== ec, "mean_ma"][1], pair_info["MEAN_MA"])
+                append!(ec_info[ec_info.id .== ec, "diff"][1], pair_info["DIFF"])
             end
         end
     end
 end
-println(allmissing)
+ec_info.num_pairs = ec_info.num_pairs .+ length.(ec_info.all_ma)./2
+
+f = Figure(size=(900,600));
+ax = Axis(f[1,1], title="Distribution of mean MA values of compound pairs per enzyme class", xlabel = "Enzyme class", ylabel = "Mean MA",
+xticks = 1:7, width = 600)
+i=1
+colors = palette(:seaborn_colorblind)[1:7];
+medians = []
+for row in eachrow(ec_info)  
+    mean_mas = row.mean_ma
+    CairoMakie.boxplot!(ax, i*ones(length(mean_mas)), mean_mas; color = colors[i], label=row.name, width=0.5)
+    n = length(mean_mas)
+    CairoMakie.text!(ax, i, maximum(mean_mas) + 3, text = "n=$n", align = (:center, :bottom), color = :black)
+    push!(medians, median(mean_mas))
+    i += 1
+end
+CairoMakie.Legend(f[1,2], ax, "Enzyme class")
+f
+
+CairoMakie.save("../figures/reaction_analysis/ec_mean_ma.png", f, px_per_unit=5)
+CSV.write(("../figures/reaction_analysis/ec_mean_ma_medians.csv"), DataFrame(ec_class = ec_info.name, median = medians))
+
+f2 = Figure(size=(900,600));
+ax2 = Axis(f2[1,1], title="Distribution of absolute MA differences of compound pairs per enzyme class", xlabel = "Enzyme class", ylabel = "Absolute MA difference",
+xticks = 1:7, width = 600)
+i=1
+colors = palette(:seaborn_colorblind)[1:7];
+medians = []
+for row in eachrow(ec_info)  
+    diffs = row.diff
+    if length(diffs) < 5
+        # Show small groups as points
+        CairoMakie.scatter!(ax2, i*ones(length(diffs)), diffs; color = colors[i], marker=:circle, markersize=10, label=row.name)
+        n = length(diffs)
+        if n > 0
+            CairoMakie.text!(ax2, i, maximum(diffs) + 3, text = "n=$n", align = (:center, :bottom), color = :black)
+            push!(medians, median(diffs))
+        else
+            push!(medians, NaN)
+        end
+        i += 1
+        continue
+    end
+    CairoMakie.boxplot!(ax2, i*ones(length(diffs)), diffs; color = colors[i], label=row.name, width=0.5)
+    n = length(diffs)
+    CairoMakie.text!(ax2, i, maximum(diffs) + 3, text = "n=$n", align = (:center, :bottom), color = :black)
+    push!(medians, median(diffs))
+    i += 1
+end
+CairoMakie.Legend(f2[1,2], ax2, "Enzyme class")
+f2
+
+CairoMakie.save("../figures/reaction_analysis/ec_diff_ma.png", f2, px_per_unit=5)
+CSV.write(("../figures/reaction_analysis/ec_diff_ma_medians.csv"), DataFrame(ec_class = ec_info.name, median = medians))
+
+# allmissing = []
+# for element in missingma
+#     if length(element) > 0
+#         for cpd in element
+#             if cpd in allmissing
+#                 continue
+#             else
+#                 push!(allmissing, cpd)
+#             end
+#         end
+#     end
+# end
+# println(allmissing)
 
 # all_in = Set(all_in)
 # all_out = Set(all_out)
